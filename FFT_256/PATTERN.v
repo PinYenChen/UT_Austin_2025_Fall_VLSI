@@ -37,6 +37,7 @@ integer i;
 
 
 reg signed [15:0] xp_real_reg[0:255], xp_img_real[0:255];
+reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
 
 initial begin
 	SEED = 5;
@@ -75,30 +76,102 @@ initial begin
 	$finish;
 end
 
-task cal_gold_task; begin
-	//deal with the input
+task cal_gold_ans;
+    // ---------- 參數與變數宣告 ----------
+    integer N;
+    real    PI;
+    real    scale;
 
-	
-end 
+    // input real 形式
+    real xr [0:255];
+    real xi [0:255];
+
+    // DFT 暫存
+    integer n, k;
+    real    sumr, sumi;
+    real    angle, c, s;
+
+    // Q1.15 轉換暫存
+    integer tmp_r, tmp_i;
+
+begin
+    // ---------- 初始化常數 ----------
+    N     = 256;
+    PI    = 3.141592653589793;
+    // 如果硬體有做 8 層 /2 的 scaling → 等效 /256
+    scale = 1.0 / 256.0;
+    // 若硬體沒做 scaling，這裡改成 1.0 即可：
+    // scale = 1.0;
+
+    // ================================================
+    // 1) 把 Q1.15 input 轉成 real (-1.0 ~ 1.0)
+    //    這裡用你的 in_xp_real / in_xp_img
+    // ================================================
+    for (n = 0; n < N; n = n + 1) begin
+        xr[n] = $itor(in_xp_real[n]) / 32768.0;  // 2^15
+        xi[n] = $itor(in_xp_img[n])  / 32768.0;
+    end
+
+    // ================================================
+    // 2) 用 DFT 公式算 256 點 FFT
+    //    每算完一個 k，就直接寫 golden_out_yp_*
+    //    Y[k] = Σ x[n] * exp(-j*2πkn/N)
+    // ================================================
+    for (k = 0; k < N; k = k + 1) begin
+        sumr = 0.0;
+        sumi = 0.0;
+
+        for (n = 0; n < N; n = n + 1) begin
+            angle = -2.0 * PI * $itor(k) * $itor(n) / $itor(N);
+            c     = $cos(angle);
+            s     = $sin(angle);
+
+            // (xr + j*xi) * (c + j*s)
+            sumr = sumr + (xr[n]*c - xi[n]*s);
+            sumi = sumi + (xr[n]*s + xi[n]*c);
+        end
+
+        // 硬體如果有總體 /256，就在這裡 scale
+        sumr = sumr * scale;
+        sumi = sumi * scale;
+
+        // ============================================
+        // 3) real -> Q1.15，直接寫到 golden 陣列
+        // ============================================
+        tmp_r = $rtoi(sumr * 32768.0);  // * 2^15
+        tmp_i = $rtoi(sumi * 32768.0);
+
+        // saturation 到 Q1.15 範圍
+        if (tmp_r >  32767) tmp_r =  32767;
+        if (tmp_r < -32768) tmp_r = -32768;
+        if (tmp_i >  32767) tmp_i =  32767;
+        if (tmp_i < -32768) tmp_i = -32768;
+
+        golden_out_yp_real[k] = tmp_r[15:0];
+        golden_out_yp_img[k]  = tmp_i[15:0];
+    end
+end
 endtask
+
+
 
 task check_ans_task; begin
     
     out_counter = 0;
     while(out_valid !== 1'b0) begin
-        if(out_xp_real !== golden_out_xp_real[out_counter]) begin
+        if(out_yp_real !== golden_out_yp_real[out_counter]) begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_xp_real, "     Golden answer = %4d", golden_out_xp_real[out_counter]);
+            $display("     Your answer = %4d", out_yp_real, "     Golden answer = %4d", golden_out_yp_real[out_counter]);
             $display("***************************************************************************");
             $finish;
         end
-        else if(out_xp_img !== golden_out_xp_img[out_counter]) begin
+        else if(out_yp_img !== golden_out_yp_img[out_counter]) begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_xp_img, "     Golden answer = %4d", golden_out_xp_img[out_counter]);
+            $display("     Your answer = %4d", out_yp_img, "     Golden answer = %4d", golden_out_yp_img[out_counter]);
             $display("***************************************************************************");
             $finish;
         end
