@@ -4168,73 +4168,68 @@ Xm(p) ------------------------> Xm+1(p)
 Xm(q) ------------------------> Xm+1(q)
       Wn          -1
 *//////////////////////////////////////////////////////
-module butterfly(
-    xp_real,
-    xq_real,
-    xp_imag,
-    xq_imag,
-    w_real,
-    w_img,
-    yp_real,
-    yp_img,
-    yq_real,
-    yq_img
+module butterfly #(parameter integer SHIFT = 13  // twiddle 放大的位數，預設 2^13，跟 0x2000 一樣
+)(
+    input  signed [15:0] xp_real,
+    input  signed [15:0] xp_img,
+    input  signed [15:0] xq_real,
+    input  signed [15:0] xq_img,
+    // twiddle factor: 實際 W 被存成 factor ≈ W * 2^SHIFT
+    input  signed [15:0] w_real,
+    input  signed [15:0] w_img,
+
+    output signed [15:0] yp_real,
+    output signed [15:0] yp_img,
+    output signed [15:0] yq_real,
+    output signed [15:0] yq_img
 );
 
-input signed [15:0] xp_real;
-input signed [15:0] xq_real;
-input signed [15:0] xp_img;
-input signed [15:0] xq_img;
-input signed [15:0] w_real;
-input signed [15:0] w_img;
-output signed [15:0] yp_real;
-output signed [15:0] yp_img;
-output signed [15:0] yq_real;
-output signed [15:0] yq_img;
+    // --------------------------------------------------------
+    // 1) xq * W：用「放大過的 twiddle」
+    //    xq: 16-bit，w: 16-bit (W * 2^SHIFT) → 32-bit 中間結果
+    //    這些值代表的是 xq * W * 2^SHIFT
+    // --------------------------------------------------------
+    wire signed [31:0] xq_w_real0 = xq_real * w_real;
+    wire signed [31:0] xq_w_real1 = xq_img  * w_img;
+    wire signed [31:0] xq_w_imag0 = xq_real * w_img;
+    wire signed [31:0] xq_w_imag1 = xq_img  * w_real;
 
-// xp first left shift 1
-// xqxx_wxx: Q1.15 * Q1.15 = Q2.30
-// xp + xqxx_wxx = Q2.14 + Q2.30
-// yp, yq : Q2.14
+    // Re(xq * W * 2^SHIFT)，Im(xq * W * 2^SHIFT)
+    wire signed [31:0] xq_w_real = xq_w_real0 - xq_w_real1;
+    wire signed [31:0] xq_w_imag = xq_w_imag0 + xq_w_imag1;
 
-// xp left shift 1
-wire signed [15:0] xp_real_shift_1;
-wire signed [15:0] xp_img_shift_1;
-assign xp_real_shift_1 = xp_real << 1;
-assign xp_img_shift_1 = xp_img << 1;
+    // --------------------------------------------------------
+    // 2) xp 也乘上 2^SHIFT，把 scale 對齊到「* 2^SHIFT」
+    //    先 sign-extend 再 shift
+    // --------------------------------------------------------
+    wire signed [31:0] xp_real_scaled =
+        {{(32-16){xp_real[15]}}, xp_real} <<< SHIFT;  // xp * 2^SHIFT
+    wire signed [31:0] xp_img_scaled  =
+        {{(32-16){xp_img[15]}},  xp_img } <<< SHIFT;  // xp * 2^SHIFT
 
-// xqxx_wxx: Q1.15 * Q1.15 = Q2.30
-// real
-wire signed [31:0] xqreal_wreal;
-wire signed [31:0] xqimg_wimg;
-// img
-wire signed [31:0] xqimg_wreal;
-wire signed [31:0] xqreal_wimg;
-assign xqreal_wreal = xq_real * w_real;
-assign xqimg_wimg = xq_img * w_img;
-assign xqimg_wreal = xq_img * w_real;
-assign xqreal_wimg = xq_real * w_img;
+    // --------------------------------------------------------
+    // 3) butterfly：
+    //    yp = xp + xq * W
+    //    yq = xp - xq * W
+    //    此時結果代表 (xp ± xq*W) * 2^SHIFT
+    // --------------------------------------------------------
+    wire signed [31:0] yp_real_scaled = xp_real_scaled + xq_w_real;
+    wire signed [31:0] yp_img_scaled  = xp_img_scaled  + xq_w_imag;
+    wire signed [31:0] yq_real_scaled = xp_real_scaled - xq_w_real;
+    wire signed [31:0] yq_img_scaled  = xp_img_scaled  - xq_w_imag;
 
-wire signed [31:0] yp_real_230;
-wire signed [31:0] yp_img_230;
+    // --------------------------------------------------------
+    // 4) 丟掉低 SHIFT bits：除以 2^SHIFT
+    //    回到和輸入一樣的 Q1.15 scale（16-bit）
+    //    取 [SHIFT+15 : SHIFT]，跟他那個 [39], [36:13] 的概念一樣
+    // --------------------------------------------------------
+    assign yp_real = yp_real_scaled[SHIFT+15 : SHIFT];
+    assign yp_img  = yp_img_scaled [SHIFT+15 : SHIFT];
+    assign yq_real = yq_real_scaled[SHIFT+15 : SHIFT];
+    assign yq_img  = yq_img_scaled [SHIFT+15 : SHIFT];
 
-assign yp_real_230 = xqreal_wreal - xqimg_wimg;
-assign yp_img_230 =  xqimg_wreal + xqreal_wimg;
-
-// xp + xqxx_wxx = Q2.14 + Q2.30
-// xqxx_wxx shift
-wire signed [15:0] yp_real_214;
-wire signed [15:0] yp_img_214;
-
-assign yp_real_214 = yp_real_230 >>> 16;
-assign yp_img_214 =  yp_img_230 >>> 16;
-
-// xp + xqxx_wxx = Q2.14 + Q2.14
-assign yp_real = xp_real_shift_1 + yp_real_214; 
-assign yp_img = xp_img_shift_1 + yp_img_214;
-assign yq_real = xp_real_shift_1 - yp_real_214;
-assign yq_img = xp_img_shift_1 - yp_img_214;
 endmodule
+
 
 
 /*
