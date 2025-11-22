@@ -82,6 +82,39 @@ task cal_gold_task; begin
 end 
 endtask
 
+task check_ans_task; begin
+    
+    out_counter = 0;
+    while(out_valid !== 1'b0) begin
+        if(out_xp_real !== golden_out_xp_real[out_counter]) begin
+            $display("***************************************************************************");
+            $display("                         Your answer is incorrect!                         ");
+            $display("                         failed at cycle = %4d                         ", out_counter);
+            $display("     Your answer = %4d", out_xp_real, "     Golden answer = %4d", golden_out_xp_real[out_counter]);
+            $display("***************************************************************************");
+            $finish;
+        end
+        else if(out_xp_img !== golden_out_xp_img[out_counter]) begin
+            $display("***************************************************************************");
+            $display("                         Your answer is incorrect!                         ");
+            $display("                         failed at cycle = %4d                         ", out_counter);
+            $display("     Your answer = %4d", out_xp_img, "     Golden answer = %4d", golden_out_xp_img[out_counter]);
+            $display("***************************************************************************");
+            $finish;
+        end
+
+        @(negedge clk);
+        out_counter = out_counter + 1;
+    end
+    if (out_counter != 256) begin
+        $display("***************************************************************************");
+        $display("            Your out_valid should be pulled up for 256 cycles!             ");
+        $display("     Your answer = %4d", out_counter, "     Golden answer = 256");
+        $display("***************************************************************************");
+        $finish;
+    end
+end
+endtask
 
 task wait_out_valid_task; begin
     latency =0;
