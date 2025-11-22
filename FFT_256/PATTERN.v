@@ -30,13 +30,13 @@ always #(CYCLE/2.0) clk = ~clk;
 //================================================================
 // integer
 //================================================================
-integer pat_num, pat_tot;
-integer latency_set;
+integer pat_num, pat_toa;
+integer latency;
 integer total_latency = 0;
 integer i;
-integer cur_pat;
 
-reg [15:0] xp_real_reg[0:255], xp_img_real[0:255];
+
+reg signed [15:0] xp_real_reg[0:255], xp_img_real[0:255];
 
 initial begin
 	SEED = 5;
@@ -49,33 +49,59 @@ initial begin
     end
     // Initialize signals
     reset_task;
-    pat_num = 10000;
+    pat_tot = 10000;
     for (i = 0 ; i < 256; i = i+1) begin
         xp_real_reg[i] = 0;
         xp_img_reg[i] = 0;
     end
     input_task;
-    for(cur_pat = 0; cur_pat < pat_tot; cur_pat = cur_pat + 1) begin
-        
+    for(pat_num = 0; pat_num < pat_tot; pat_num = pat_num + 1) begin
         in_valid = 1;
-        for (i = 0; i < 6; i = i + 1) begin
-            in_syndrome = S[i];
-            @(negedge clk);
+        for (i = 0 ; i < 256 ; i = i + 1 ) begin
+            in_xp_real = xp_real_reg[i];
+            in_xp_img = xp_img_reg[i];
         end
+        @(negedge clk);
         in_valid = 0;
-        in_syndrome = 'bx;
-        latency_set = 0;
+        in_xp_real = 'bx;
+        in_xp_img = 'bx;
+        latency = 0;
         wait_out_valid_task;
+        cal_gold_task;
         check_ans_task;
         $display("\033[0;34mPASS SET NO.%4d,\033[m \033[0;32m     Execution Cycle: %3d\033[m", pat_num, latency_set);
-        total_latency = total_latency + latency_set;
     end
 	display_pass;
 	$finish;
 end
+
+task cal_gold_task; begin
+	//deal with the input
+
+	
+end 
+endtask
+
+
+task wait_out_valid_task; begin
+    latency =0;
+    while (out_valid === 0) begin
+        latency = latency + 1;
+        if (latency == (1000*CYCLE)) begin // max latency = 1000
+            $display("                    OVER 1000 LATENCY                   ");
+            repeat (2) @(negedge clk);
+            $finish;
+        end
+        @(negedge clk);
+    end
+    total_latency = total_latency + latency;
+end 
+endtask
+
 task input_task; begin
     for (i = 0 ; i < 256 ; i = i + 1) begin
-        xp_real_reg[i] = 
+        xp_real_reg[i] = $urandom_range(-32768, 32767);
+        xp_img_reg[i] = $urandom_range(-32768, 32767);
     end
 end
 endtask
