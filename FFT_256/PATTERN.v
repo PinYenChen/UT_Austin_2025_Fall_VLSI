@@ -16,7 +16,7 @@ module PATTERN(
 // Input & Output
 // ========================================
 output reg clk, rst_n, in_valid;
-output signed reg [15:0] in_xp_real, in_xp_img;
+output reg signed [15:0] in_xp_real, in_xp_img;
 
 input out_valid;
 input signed [15:0] out_yp_real, out_yp_img;
@@ -30,24 +30,16 @@ always #(CYCLE/2.0) clk = ~clk;
 //================================================================
 // integer
 //================================================================
-integer pat_num, pat_toa;
+integer pat_num, pat_tot;
 integer latency;
 integer total_latency = 0;
 integer i;
 
-
-reg signed [15:0] xp_real_reg[0:255], xp_img_real[0:255];
+reg[9:0] out_counter;
+reg signed [15:0] xp_real_reg[0:255], xp_img_reg[0:255];
 reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
 
 initial begin
-	SEED = 5;
-    // Open input and output files
-    f_in  = $fopen("../00_TESTBED/input.txt", "r");
-    // f_in  = $fopen("../00_TESTBED/input_v2.txt", "r");
-    if (f_in == 0) begin
-        $display("Failed to open input.txt");
-        $finish;
-    end
     // Initialize signals
     reset_task;
     pat_tot = 10000;
@@ -70,13 +62,13 @@ initial begin
         wait_out_valid_task;
         cal_gold_task;
         check_ans_task;
-        $display("\033[0;34mPASS SET NO.%4d,\033[m \033[0;32m     Execution Cycle: %3d\033[m", pat_num, latency_set);
+        $display("\033[0;34mPASS SET NO.%4d,\033[m \033[0;32m     Execution Cycle: %3d\033[m", pat_num, latency);
     end
 	display_pass;
 	$finish;
 end
 
-task cal_gold_ans;
+task cal_gold_task;
     integer N;
     real    PI;
     real    scale;
