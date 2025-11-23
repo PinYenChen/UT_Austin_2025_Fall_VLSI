@@ -1,4 +1,4 @@
-`define CYCLE_TIME 5.8
+`define CYCLE_TIME 20
 
 module PATTERN(
     // Output signals
@@ -77,7 +77,6 @@ initial begin
 end
 
 task cal_gold_ans;
-    // ---------- 參數與變數宣告 ----------
     integer N;
     real    PI;
     real    scale;
@@ -114,7 +113,6 @@ begin
 
     // ================================================
     // 2) 用 DFT 公式算 256 點 FFT
-    //    每算完一個 k，就直接寫 golden_out_yp_*
     //    Y[k] = Σ x[n] * exp(-j*2πkn/N)
     // ================================================
     for (k = 0; k < N; k = k + 1) begin
