@@ -239,4 +239,15 @@ task display_pass; begin
 	$display("              clock period = %4fns", CYCLE);
 	$display("**************************************************");
 end endtask
+
+FFT_256 fft_256(
+    .clk(clk),
+    .rst_n(rst_n),
+    .in_valid(in_valid),
+    .x_real(in_xp_real),
+    .x_img(in_xp_img),
+    .y_real(out_yp_real),
+    .y_img(out_yp_img),
+    .out_valid(out_valid)
+);
 endmodule
