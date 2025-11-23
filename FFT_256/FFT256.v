@@ -273,6 +273,7 @@ assign w_img[126] = 16'hf9b8; // -0.0491
 assign w_real[127] = 16'h800a; // -0.9997
 assign w_img[127] = 16'hfcdc; // -0.0245
 
+integer i;
 localparam [1:0]
   IDLE    ='d0,
   CAL_IN ='d1,
@@ -306,13 +307,15 @@ always @(posedge clk) begin
     if (in_valid) begin
         in_reg_real [128] <= x_real;
         in_reg_img[128] <= x_img;
-        for (integer i = 0 ; i < 128 ; i = i + 1) begin
+        for (i = 0 ; i < 128 ; i = i + 1) begin
             in_reg_real[i] <= in_reg_real[i+1];
             in_reg_img[i] <= in_reg_img[i+1];
         end 
     end
 end
-// stage 1
+// ========================================
+// STAGE 1 
+// ========================================
 always @(*) begin
     if (cnt > 128 && cnt < 257) begin
         b1_xp_real = in_reg_real[0];
@@ -331,7 +334,7 @@ always @(posedge clk) begin
         st1_img[64] <= b1_ypimg;
         st1_real[129] <= b1_yqreal;
         st1_img[129] <= b1_yqimg;
-        for (integer i = 0 ; i < 64 ; i++) begin
+        for (i = 0 ; i < 64 ; i = i + 1) begin
             st1_real[i] <= st1_real[i+1];
             st1_img[i] <= st1_img[i+1];
             st1_real[65 + i] <= st1_real[i+66];
@@ -339,7 +342,9 @@ always @(posedge clk) begin
         end
     end
 end 
-// stage 2
+// ========================================
+// Stage 2
+// ========================================
 always @(*) begin
     if (cnt > 193 && cnt < 258) begin
         b2_xp_real = st1_real[0];
@@ -372,7 +377,7 @@ always @(posedge clk) begin
         st2_img[98] <= b3_ypimg;
         st2_real[131] <= b3_yqreal;
         st2_img[131] <= b3_yqimg;
-        for (integer i = 0 ; i < 32 ; i++) begin
+        for (integer i = 0 ; i < 32 ; i = i + 1) begin
             st2_real[i] <= st2_real[i+1];
             st2_img[i] <= st2_img[i+1];
             st2_real[33 + i] <= st2_real[i+34];
@@ -385,7 +390,9 @@ always @(posedge clk) begin
     end
 end
 
-// stage 3
+// ========================================
+// Stage 3
+// ========================================
 always @(*) begin
     if (cnt > 226 && cnt < 259) begin
         b4_xp_real = st2_real[0];
@@ -446,7 +453,7 @@ always @(posedge clk) begin
         st3_img[118] <= b3_ypimg;
         st3_real[135] <= b3_yqreal;
         st3_img[135] <= b3_yqimg;
-        for (integer i = 0 ; i < 16 ; i++) begin
+        for (i = 0 ; i < 16 ; i = i + 1) begin
             st3_real[i] <= st3_real[i+1];
             st3_img[i] <= st3_img[i+1];
             st3_real[17 + i] <= st3_real[i+18];
@@ -467,7 +474,9 @@ always @(posedge clk) begin
     end
 end
 
-// stage 4
+// ========================================
+// Stage 4
+// ========================================
 always @(*) begin
     if (cnt > 243 && cnt < 260) begin
         b8_xp_real = st3_real[0];
@@ -514,8 +523,8 @@ always @(*) begin
         b12_xp_img = st3_img[68];
         b12_xq_real = st3_real[84];
         b12_xq_img = st3_img[84];
-        b12_wreal = w_real[0];
-        b12_wimg = w_img[0];
+        b12_wreal = w_real[16];
+        b12_wimg = w_img[16];
     end
 end
 always @(*) begin
@@ -524,8 +533,8 @@ always @(*) begin
         b13_xp_img = st3_img[85];
         b13_xq_real = st3_real[101];
         b13_xq_img = st3_img[101];
-        b13_wreal = w_real[64];
-        b13_wimg = w_img[64];
+        b13_wreal = w_real[80];
+        b13_wimg = w_img[80];
     end
 end
 always @(*) begin
@@ -534,8 +543,8 @@ always @(*) begin
         b14_xp_img = st3_img[102];
         b14_xq_real = st3_real[118];
         b14_xq_img = st3_img[118];
-        b14_wreal = w_real[32];
-        b14_wimg = w_img[32];
+        b14_wreal = w_real[48];
+        b14_wimg = w_img[48];
     end
 end
 always @(*) begin
@@ -544,8 +553,8 @@ always @(*) begin
         b15_xp_img = st3_img[119];
         b15_xq_real = st3_real[135];
         b15_xq_img = st3_img[135];
-        b15_wreal = w_real[96];
-        b15_wimg = w_img[96];
+        b15_wreal = w_real[112];
+        b15_wimg = w_img[112];
     end
 end
 reg [16:0] st4_real [0:143];
@@ -591,7 +600,7 @@ always @(posedge clk) begin
         st4_img[134] <= b15_ypimg;
         st4_real[143] <= b16_yqreal;
         st4_img[143] <= b16_yqimg;
-        for (integer i = 0 ; i < 8 ; i++) begin
+        for (i = 0 ; i < 8 ; i = i + 1) begin
             st4_real[i] <= st4_real[i+1];
             st4_img[i] <= st4_img[i+1];
             st4_real[9 + i] <= st4_real[i+10];
@@ -629,7 +638,9 @@ always @(posedge clk) begin
 end
 
 
-// stage 5
+// ========================================
+// Stage 5
+// ========================================
 always @(*) begin
     if (cnt > 252 && cnt < 261) begin
         b16_xp_real = st4_real[0];
@@ -676,8 +687,8 @@ always @(*) begin
         b20_xp_img = st4_img[36];
         b20_xq_real = st4_real[44];
         b20_xq_img = st4_img[44];
-        b20_wreal = w_real[0];
-        b20_wimg = w_img[0];
+        b20_wreal = w_real[16];
+        b20_wimg = w_img[16];
     end
 end
 always @(*) begin
@@ -686,8 +697,8 @@ always @(*) begin
         b21_xp_img = st4_img[45];
         b21_xq_real = st4_real[53];
         b21_xq_img = st4_img[53];
-        b21_wreal = w_real[64];
-        b21_wimg = w_img[64];
+        b21_wreal = w_real[80];
+        b21_wimg = w_img[80];
     end
 end
 always @(*) begin
@@ -696,8 +707,8 @@ always @(*) begin
         b22_xp_img = st4_img[54];
         b22_xq_real = st4_real[62];
         b22_xq_img = st4_img[62];
-        b22_wreal = w_real[32];
-        b22_wimg = w_img[32];
+        b22_wreal = w_real[48];
+        b22_wimg = w_img[48];
     end
 end
 always @(*) begin
@@ -706,8 +717,8 @@ always @(*) begin
         b23_xp_img = st4_img[63];
         b23_xq_real = st4_real[71];
         b23_xq_img = st4_img[71];
-        b23_wreal = w_real[96];
-        b23_wimg = w_img[96];
+        b23_wreal = w_real[112];
+        b23_wimg = w_img[112];
     end
 end
 always @(*) begin
@@ -716,8 +727,8 @@ always @(*) begin
         b24_xp_img = st4_img[72];
         b24_xq_real = st4_real[80];
         b24_xq_img = st4_img[80];
-        b24_wreal = w_real[0];
-        b24_wimg = w_img[0];
+        b24_wreal = w_real[8];
+        b24_wimg = w_img[8];
     end
 end
 always @(*) begin
@@ -726,8 +737,8 @@ always @(*) begin
         b25_xp_img = st4_img[81];
         b25_xq_real = st4_real[89];
         b25_xq_img = st4_img[89];
-        b25_wreal = w_real[64];
-        b25_wimg = w_img[64];
+        b25_wreal = w_real[72];
+        b25_wimg = w_img[72];
     end
 end
 always @(*) begin
@@ -736,8 +747,8 @@ always @(*) begin
         b26_xp_img = st4_img[90];
         b26_xq_real = st4_real[88];
         b26_xq_img = st4_img[88];
-        b26_wreal = w_real[32];
-        b26_wimg = w_img[32];
+        b26_wreal = w_real[40];
+        b26_wimg = w_img[40];
     end
 end
 always @(*) begin
@@ -746,8 +757,8 @@ always @(*) begin
         b27_xp_img = st4_img[99];
         b27_xq_real = st4_real[107];
         b27_xq_img = st4_img[107];
-        b27_wreal = w_real[96];
-        b27_wimg = w_img[96];
+        b27_wreal = w_real[104];
+        b27_wimg = w_img[104];
     end
 end
 always @(*) begin
@@ -756,8 +767,8 @@ always @(*) begin
         b28_xp_img = st4_img[108];
         b28_xq_real = st4_real[116];
         b28_xq_img = st4_img[116];
-        b28_wreal = w_real[0];
-        b28_wimg = w_img[0];
+        b28_wreal = w_real[24];
+        b28_wimg = w_img[24];
     end
 end
 always @(*) begin
@@ -766,8 +777,8 @@ always @(*) begin
         b29_xp_img = st4_img[117];
         b29_xq_real = st4_real[125];
         b29_xq_img = st4_img[125];
-        b29_wreal = w_real[64];
-        b29_wimg = w_img[64];
+        b29_wreal = w_real[88];
+        b29_wimg = w_img[88];
     end
 end
 always @(*) begin
@@ -776,8 +787,8 @@ always @(*) begin
         b30_xp_img = st4_img[126];
         b30_xq_real = st4_real[134];
         b30_xq_img = st4_img[134];
-        b30_wreal = w_real[32];
-        b30_wimg = w_img[32];
+        b30_wreal = w_real[56];
+        b30_wimg = w_img[56];
     end
 end
 always @(*) begin
@@ -786,8 +797,8 @@ always @(*) begin
         b31_xp_img = st4_img[135];
         b31_xq_real = st4_real[143];
         b31_xq_img = st4_img[143];
-        b31_wreal = w_real[96];
-        b31_wimg = w_img[96];
+        b31_wreal = w_real[120];
+        b31_wimg = w_img[120];
     end
 end
 reg [16:0] st5_real [0:159];
@@ -866,7 +877,7 @@ always @(posedge clk) begin
         st5_img[154] <= b31_ypimg;
         st5_real[159] <= b31_yqreal;
         st5_img[159] <= b31_yqimg;
-        for (integer i = 0 ; i < 4 ; i++) begin
+        for (integer i = 0 ; i < 4 ; i = i + 1) begin
             st5_real[i] <= st5_real[i+1];
             st5_img[i]  <= st5_img[i+1];
             st5_real[5 + i] <= st5_real[6 + i];
@@ -938,7 +949,9 @@ end
 reg [16:0] st6_real [0:255];
 reg [16:0] st6_img [0:255];
 
-// stage 6 use 32 butterfly
+// ========================================
+// Stage 6
+// ========================================
 always @(*) begin
     if (cnt > 257 && cnt < 262) begin // stage 6 input
         b32_xp_real = st5_real[0];
@@ -1166,6 +1179,9 @@ always @(*) begin
         b63_wimg    = w_img[124];
 
     end
+// ========================================
+// Stage 7
+// ========================================
     else if (cnt == 262) begin // stage 7 input use b32-b63 pipeline 4 stage
         // k = 0, b32
         b32_xp_real = st6_real[0];
@@ -1180,248 +1196,248 @@ always @(*) begin
         b33_xp_img  = st6_img[4];
         b33_xq_real = st6_real[6];
         b33_xq_img  = st6_img[6];
-        b33_wreal   = w_real[32];
-        b33_wimg    = w_img[32];
+        b33_wreal   = w_real[64];
+        b33_wimg    = w_img[64];
 
         // k = 2, b34
         b34_xp_real = st6_real[8];
         b34_xp_img  = st6_img[8];
         b34_xq_real = st6_real[10];
         b34_xq_img  = st6_img[10];
-        b34_wreal   = w_real[16];
-        b34_wimg    = w_img[16];
+        b34_wreal   = w_real[32];
+        b34_wimg    = w_img[32];
 
         // k = 3, b35
         b35_xp_real = st6_real[12];
         b35_xp_img  = st6_img[12];
         b35_xq_real = st6_real[14];
         b35_xq_img  = st6_img[14];
-        b35_wreal   = w_real[48];
-        b35_wimg    = w_img[48];
+        b35_wreal   = w_real[96];
+        b35_wimg    = w_img[96];
 
         // k = 4, b36
         b36_xp_real = st6_real[16];
         b36_xp_img  = st6_img[16];
         b36_xq_real = st6_real[18];
         b36_xq_img  = st6_img[18];
-        b36_wreal   = w_real[8];
-        b36_wimg    = w_img[8];
+        b36_wreal   = w_real[16];
+        b36_wimg    = w_img[16];
 
         // k = 5, b37
         b37_xp_real = st6_real[20];
         b37_xp_img  = st6_img[20];
         b37_xq_real = st6_real[22];
         b37_xq_img  = st6_img[22];
-        b37_wreal   = w_real[40];
-        b37_wimg    = w_img[40];
+        b37_wreal   = w_real[80];
+        b37_wimg    = w_img[80];
 
         // k = 6, b38
         b38_xp_real = st6_real[24];
         b38_xp_img  = st6_img[24];
         b38_xq_real = st6_real[26];
         b38_xq_img  = st6_img[26];
-        b38_wreal   = w_real[24];
-        b38_wimg    = w_img[24];
+        b38_wreal   = w_real[48];
+        b38_wimg    = w_img[48];
 
         // k = 7, b39
         b39_xp_real = st6_real[28];
         b39_xp_img  = st6_img[28];
         b39_xq_real = st6_real[30];
         b39_xq_img  = st6_img[30];
-        b39_wreal   = w_real[56];
-        b39_wimg    = w_img[56];
+        b39_wreal   = w_real[112];
+        b39_wimg    = w_img[112];
 
         // k = 8, b40
         b40_xp_real = st6_real[32];
         b40_xp_img  = st6_img[32];
         b40_xq_real = st6_real[34];
         b40_xq_img  = st6_img[34];
-        b40_wreal   = w_real[4];
-        b40_wimg    = w_img[4];
+        b40_wreal   = w_real[8];
+        b40_wimg    = w_img[8];
 
         // k = 9, b41
         b41_xp_real = st6_real[36];
         b41_xp_img  = st6_img[36];
         b41_xq_real = st6_real[38];
         b41_xq_img  = st6_img[38];
-        b41_wreal   = w_real[36];
-        b41_wimg    = w_img[36];
+        b41_wreal   = w_real[72];
+        b41_wimg    = w_img[72];
 
         // k = 10, b42
         b42_xp_real = st6_real[40];
         b42_xp_img  = st6_img[40];
         b42_xq_real = st6_real[42];
         b42_xq_img  = st6_img[42];
-        b42_wreal   = w_real[20];
-        b42_wimg    = w_img[20];
+        b42_wreal   = w_real[40];
+        b42_wimg    = w_img[40];
 
         // k = 11, b43
         b43_xp_real = st6_real[44];
         b43_xp_img  = st6_img[44];
         b43_xq_real = st6_real[46];
         b43_xq_img  = st6_img[46];
-        b43_wreal   = w_real[52];
-        b43_wimg    = w_img[52];
+        b43_wreal   = w_real[104];
+        b43_wimg    = w_img[104];
 
         // k = 12, b44
         b44_xp_real = st6_real[48];
         b44_xp_img  = st6_img[48];
         b44_xq_real = st6_real[50];
         b44_xq_img  = st6_img[50];
-        b44_wreal   = w_real[12];
-        b44_wimg    = w_img[12];
+        b44_wreal   = w_real[24];
+        b44_wimg    = w_img[24];
 
         // k = 13, b45
         b45_xp_real = st6_real[52];
         b45_xp_img  = st6_img[52];
         b45_xq_real = st6_real[54];
         b45_xq_img  = st6_img[54];
-        b45_wreal   = w_real[44];
-        b45_wimg    = w_img[44];
+        b45_wreal   = w_real[88];
+        b45_wimg    = w_img[88];
 
         // k = 14, b46
         b46_xp_real = st6_real[56];
         b46_xp_img  = st6_img[56];
         b46_xq_real = st6_real[58];
         b46_xq_img  = st6_img[58];
-        b46_wreal   = w_real[28];
-        b46_wimg    = w_img[28];
+        b46_wreal   = w_real[56];
+        b46_wimg    = w_img[56];
 
         // k = 15, b47
         b47_xp_real = st6_real[60];
         b47_xp_img  = st6_img[60];
         b47_xq_real = st6_real[62];
         b47_xq_img  = st6_img[62];
-        b47_wreal   = w_real[60];
-        b47_wimg    = w_img[60];
+        b47_wreal   = w_real[120];
+        b47_wimg    = w_img[120];
 
         // k = 16, b48
         b48_xp_real = st6_real[64];
         b48_xp_img  = st6_img[64];
         b48_xq_real = st6_real[66];
         b48_xq_img  = st6_img[66];
-        b48_wreal   = w_real[2];
-        b48_wimg    = w_img[2];
+        b48_wreal   = w_real[4];
+        b48_wimg    = w_img[4];
 
         // k = 17, b49
         b49_xp_real = st6_real[68];
         b49_xp_img  = st6_img[68];
         b49_xq_real = st6_real[70];
         b49_xq_img  = st6_img[70];
-        b49_wreal   = w_real[34];
-        b49_wimg    = w_img[34];
+        b49_wreal   = w_real[68];
+        b49_wimg    = w_img[68];
 
         // k = 18, b50
         b50_xp_real = st6_real[72];
         b50_xp_img  = st6_img[72];
         b50_xq_real = st6_real[74];
         b50_xq_img  = st6_img[74];
-        b50_wreal   = w_real[18];
-        b50_wimg    = w_img[18];
+        b50_wreal   = w_real[36];
+        b50_wimg    = w_img[36];
 
         // k = 19, b51
         b51_xp_real = st6_real[76];
         b51_xp_img  = st6_img[76];
         b51_xq_real = st6_real[78];
         b51_xq_img  = st6_img[78];
-        b51_wreal   = w_real[50];
-        b51_wimg    = w_img[50];
+        b51_wreal   = w_real[100];
+        b51_wimg    = w_img[100];
 
         // k = 20, b52
         b52_xp_real = st6_real[80];
         b52_xp_img  = st6_img[80];
         b52_xq_real = st6_real[82];
         b52_xq_img  = st6_img[82];
-        b52_wreal   = w_real[10];
-        b52_wimg    = w_img[10];
+        b52_wreal   = w_real[20];
+        b52_wimg    = w_img[20];
 
         // k = 21, b53
         b53_xp_real = st6_real[84];
         b53_xp_img  = st6_img[84];
         b53_xq_real = st6_real[86];
         b53_xq_img  = st6_img[86];
-        b53_wreal   = w_real[42];
-        b53_wimg    = w_img[42];
+        b53_wreal   = w_real[84];
+        b53_wimg    = w_img[84];
 
         // k = 22, b54
         b54_xp_real = st6_real[88];
         b54_xp_img  = st6_img[88];
         b54_xq_real = st6_real[90];
         b54_xq_img  = st6_img[90];
-        b54_wreal   = w_real[26];
-        b54_wimg    = w_img[26];
+        b54_wreal   = w_real[52];
+        b54_wimg    = w_img[52];
 
         // k = 23, b55
         b55_xp_real = st6_real[92];
         b55_xp_img  = st6_img[92];
         b55_xq_real = st6_real[94];
         b55_xq_img  = st6_img[94];
-        b55_wreal   = w_real[58];
-        b55_wimg    = w_img[58];
+        b55_wreal   = w_real[116];
+        b55_wimg    = w_img[116];
 
         // k = 24, b56
         b56_xp_real = st6_real[96];
         b56_xp_img  = st6_img[96];
         b56_xq_real = st6_real[98];
         b56_xq_img  = st6_img[98];
-        b56_wreal   = w_real[6];
-        b56_wimg    = w_img[6];
+        b56_wreal   = w_real[12];
+        b56_wimg    = w_img[12];
 
         // k = 25, b57
         b57_xp_real = st6_real[100];
         b57_xp_img  = st6_img[100];
         b57_xq_real = st6_real[102];
         b57_xq_img  = st6_img[102];
-        b57_wreal   = w_real[38];
-        b57_wimg    = w_img[38];
+        b57_wreal   = w_real[76];
+        b57_wimg    = w_img[76];
 
         // k = 26, b58
         b58_xp_real = st6_real[104];
         b58_xp_img  = st6_img[104];
         b58_xq_real = st6_real[106];
         b58_xq_img  = st6_img[106];
-        b58_wreal   = w_real[22];
-        b58_wimg    = w_img[22];
+        b58_wreal   = w_real[44];
+        b58_wimg    = w_img[44];
 
         // k = 27, b59
         b59_xp_real = st6_real[108];
         b59_xp_img  = st6_img[108];
         b59_xq_real = st6_real[110];
         b59_xq_img  = st6_img[110];
-        b59_wreal   = w_real[54];
-        b59_wimg    = w_img[54];
+        b59_wreal   = w_real[108];
+        b59_wimg    = w_img[108];
 
         // k = 28, b60
         b60_xp_real = st6_real[112];
         b60_xp_img  = st6_img[112];
         b60_xq_real = st6_real[114];
         b60_xq_img  = st6_img[114];
-        b60_wreal   = w_real[14];
-        b60_wimg    = w_img[14];
+        b60_wreal   = w_real[28];
+        b60_wimg    = w_img[28];
 
         // k = 29, b61
         b61_xp_real = st6_real[116];
         b61_xp_img  = st6_img[116];
         b61_xq_real = st6_real[118];
         b61_xq_img  = st6_img[118];
-        b61_wreal   = w_real[46];
-        b61_wimg    = w_img[46];
+        b61_wreal   = w_real[92];
+        b61_wimg    = w_img[92];
 
         // k = 30, b62
         b62_xp_real = st6_real[120];
         b62_xp_img  = st6_img[120];
         b62_xq_real = st6_real[122];
         b62_xq_img  = st6_img[122];
-        b62_wreal   = w_real[30];
-        b62_wimg    = w_img[30];
+        b62_wreal   = w_real[60];
+        b62_wimg    = w_img[60];
 
         // k = 31, b63
         b63_xp_real = st6_real[124];
         b63_xp_img  = st6_img[124];
         b63_xq_real = st6_real[126];
         b63_xq_img  = st6_img[126];
-        b63_wreal   = w_real[62];
-        b63_wimg    = w_img[62];
+        b63_wreal   = w_real[124];
+        b63_wimg    = w_img[124];
     end
     else if (cnt == 263) begin // stage 7 input use b32-b63 pipeline 4 stage
         // k = 0, b32
@@ -1437,248 +1453,248 @@ always @(*) begin
         b33_xp_img  = st6_img[5];
         b33_xq_real = st6_real[7];
         b33_xq_img  = st6_img[7];
-        b33_wreal   = w_real[32];
-        b33_wimg    = w_img[32];
+        b33_wreal   = w_real[64];
+        b33_wimg    = w_img[64];
 
         // k = 2, b34
         b34_xp_real = st6_real[9];
         b34_xp_img  = st6_img[9];
         b34_xq_real = st6_real[11];
         b34_xq_img  = st6_img[11];
-        b34_wreal   = w_real[16];
-        b34_wimg    = w_img[16];
+        b34_wreal   = w_real[32];
+        b34_wimg    = w_img[32];
 
         // k = 3, b35
         b35_xp_real = st6_real[13];
         b35_xp_img  = st6_img[13];
         b35_xq_real = st6_real[15];
         b35_xq_img  = st6_img[15];
-        b35_wreal   = w_real[48];
-        b35_wimg    = w_img[48];
+        b35_wreal   = w_real[96];
+        b35_wimg    = w_img[96];
 
         // k = 4, b36
         b36_xp_real = st6_real[17];
         b36_xp_img  = st6_img[17];
         b36_xq_real = st6_real[19];
         b36_xq_img  = st6_img[19];
-        b36_wreal   = w_real[8];
-        b36_wimg    = w_img[8];
+        b36_wreal   = w_real[16];
+        b36_wimg    = w_img[16];
 
         // k = 5, b37
         b37_xp_real = st6_real[21];
         b37_xp_img  = st6_img[21];
         b37_xq_real = st6_real[23];
         b37_xq_img  = st6_img[23];
-        b37_wreal   = w_real[40];
-        b37_wimg    = w_img[40];
+        b37_wreal   = w_real[80];
+        b37_wimg    = w_img[80];
 
         // k = 6, b38
         b38_xp_real = st6_real[25];
         b38_xp_img  = st6_img[25];
         b38_xq_real = st6_real[27];
         b38_xq_img  = st6_img[27];
-        b38_wreal   = w_real[24];
-        b38_wimg    = w_img[24];
+        b38_wreal   = w_real[48];
+        b38_wimg    = w_img[48];
 
         // k = 7, b39
         b39_xp_real = st6_real[29];
         b39_xp_img  = st6_img[29];
         b39_xq_real = st6_real[31];
         b39_xq_img  = st6_img[31];
-        b39_wreal   = w_real[56];
-        b39_wimg    = w_img[56];
+        b39_wreal   = w_real[112];
+        b39_wimg    = w_img[112];
 
         // k = 8, b40
         b40_xp_real = st6_real[33];
         b40_xp_img  = st6_img[33];
         b40_xq_real = st6_real[35];
         b40_xq_img  = st6_img[35];
-        b40_wreal   = w_real[4];
-        b40_wimg    = w_img[4];
+        b40_wreal   = w_real[8];
+        b40_wimg    = w_img[8];
 
         // k = 9, b41
         b41_xp_real = st6_real[37];
         b41_xp_img  = st6_img[37];
         b41_xq_real = st6_real[39];
         b41_xq_img  = st6_img[39];
-        b41_wreal   = w_real[36];
-        b41_wimg    = w_img[36];
+        b41_wreal   = w_real[72];
+        b41_wimg    = w_img[72];
 
         // k = 10, b42
         b42_xp_real = st6_real[41];
         b42_xp_img  = st6_img[41];
         b42_xq_real = st6_real[43];
         b42_xq_img  = st6_img[43];
-        b42_wreal   = w_real[20];
-        b42_wimg    = w_img[20];
+        b42_wreal   = w_real[40];
+        b42_wimg    = w_img[40];
 
         // k = 11, b43
         b43_xp_real = st6_real[45];
         b43_xp_img  = st6_img[45];
         b43_xq_real = st6_real[47];
         b43_xq_img  = st6_img[47];
-        b43_wreal   = w_real[52];
-        b43_wimg    = w_img[52];
+        b43_wreal   = w_real[104];
+        b43_wimg    = w_img[104];
 
         // k = 12, b44
         b44_xp_real = st6_real[49];
         b44_xp_img  = st6_img[49];
         b44_xq_real = st6_real[51];
         b44_xq_img  = st6_img[51];
-        b44_wreal   = w_real[12];
-        b44_wimg    = w_img[12];
+        b44_wreal   = w_real[24];
+        b44_wimg    = w_img[24];
 
         // k = 13, b45
         b45_xp_real = st6_real[53];
         b45_xp_img  = st6_img[53];
         b45_xq_real = st6_real[55];
         b45_xq_img  = st6_img[55];
-        b45_wreal   = w_real[44];
-        b45_wimg    = w_img[44];
+        b45_wreal   = w_real[88];
+        b45_wimg    = w_img[88];
 
         // k = 14, b46
         b46_xp_real = st6_real[57];
         b46_xp_img  = st6_img[57];
         b46_xq_real = st6_real[59];
         b46_xq_img  = st6_img[59];
-        b46_wreal   = w_real[28];
-        b46_wimg    = w_img[28];
+        b46_wreal   = w_real[56];
+        b46_wimg    = w_img[56];
 
         // k = 15, b47
         b47_xp_real = st6_real[61];
         b47_xp_img  = st6_img[61];
         b47_xq_real = st6_real[63];
         b47_xq_img  = st6_img[63];
-        b47_wreal   = w_real[60];
-        b47_wimg    = w_img[60];
+        b47_wreal   = w_real[120];
+        b47_wimg    = w_img[120];
 
         // k = 16, b48
         b48_xp_real = st6_real[65];
         b48_xp_img  = st6_img[65];
         b48_xq_real = st6_real[67];
         b48_xq_img  = st6_img[67];
-        b48_wreal   = w_real[2];
-        b48_wimg    = w_img[2];
+        b48_wreal   = w_real[4];
+        b48_wimg    = w_img[4];
 
         // k = 17, b49
         b49_xp_real = st6_real[69];
         b49_xp_img  = st6_img[69];
         b49_xq_real = st6_real[71];
         b49_xq_img  = st6_img[71];
-        b49_wreal   = w_real[34];
-        b49_wimg    = w_img[34];
+        b49_wreal   = w_real[68];
+        b49_wimg    = w_img[68];
 
         // k = 18, b50
         b50_xp_real = st6_real[73];
         b50_xp_img  = st6_img[73];
         b50_xq_real = st6_real[75];
         b50_xq_img  = st6_img[75];
-        b50_wreal   = w_real[18];
-        b50_wimg    = w_img[18];
+        b50_wreal   = w_real[36];
+        b50_wimg    = w_img[36];
 
         // k = 19, b51
         b51_xp_real = st6_real[77];
         b51_xp_img  = st6_img[77];
         b51_xq_real = st6_real[79];
         b51_xq_img  = st6_img[79];
-        b51_wreal   = w_real[50];
-        b51_wimg    = w_img[50];
+        b51_wreal   = w_real[100];
+        b51_wimg    = w_img[100];
 
         // k = 20, b52
         b52_xp_real = st6_real[81];
         b52_xp_img  = st6_img[81];
         b52_xq_real = st6_real[83];
         b52_xq_img  = st6_img[83];
-        b52_wreal   = w_real[10];
-        b52_wimg    = w_img[10];
+        b52_wreal   = w_real[20];
+        b52_wimg    = w_img[20];
 
         // k = 21, b53
         b53_xp_real = st6_real[85];
         b53_xp_img  = st6_img[85];
         b53_xq_real = st6_real[87];
         b53_xq_img  = st6_img[87];
-        b53_wreal   = w_real[42];
-        b53_wimg    = w_img[42];
+        b53_wreal   = w_real[84];
+        b53_wimg    = w_img[84];
 
         // k = 22, b54
         b54_xp_real = st6_real[89];
         b54_xp_img  = st6_img[89];
         b54_xq_real = st6_real[91];
         b54_xq_img  = st6_img[91];
-        b54_wreal   = w_real[26];
-        b54_wimg    = w_img[26];
+        b54_wreal   = w_real[52];
+        b54_wimg    = w_img[52];
 
         // k = 23, b55
         b55_xp_real = st6_real[93];
         b55_xp_img  = st6_img[93];
         b55_xq_real = st6_real[95];
         b55_xq_img  = st6_img[95];
-        b55_wreal   = w_real[58];
-        b55_wimg    = w_img[58];
+        b55_wreal   = w_real[116];
+        b55_wimg    = w_img[116];
 
         // k = 24, b56
         b56_xp_real = st6_real[97];
         b56_xp_img  = st6_img[97];
         b56_xq_real = st6_real[99];
         b56_xq_img  = st6_img[99];
-        b56_wreal   = w_real[6];
-        b56_wimg    = w_img[6];
+        b56_wreal   = w_real[12];
+        b56_wimg    = w_img[12];
 
         // k = 25, b57
         b57_xp_real = st6_real[101];
         b57_xp_img  = st6_img[101];
         b57_xq_real = st6_real[103];
         b57_xq_img  = st6_img[103];
-        b57_wreal   = w_real[38];
-        b57_wimg    = w_img[38];
+        b57_wreal   = w_real[76];
+        b57_wimg    = w_img[76];
 
         // k = 26, b58
         b58_xp_real = st6_real[105];
         b58_xp_img  = st6_img[105];
         b58_xq_real = st6_real[107];
         b58_xq_img  = st6_img[107];
-        b58_wreal   = w_real[22];
-        b58_wimg    = w_img[22];
+        b58_wreal   = w_real[44];
+        b58_wimg    = w_img[44];
 
         // k = 27, b59
         b59_xp_real = st6_real[109];
         b59_xp_img  = st6_img[109];
         b59_xq_real = st6_real[111];
         b59_xq_img  = st6_img[111];
-        b59_wreal   = w_real[54];
-        b59_wimg    = w_img[54];
+        b59_wreal   = w_real[108];
+        b59_wimg    = w_img[108];
 
         // k = 28, b60
         b60_xp_real = st6_real[113];
         b60_xp_img  = st6_img[113];
         b60_xq_real = st6_real[115];
         b60_xq_img  = st6_img[115];
-        b60_wreal   = w_real[14];
-        b60_wimg    = w_img[14];
+        b60_wreal   = w_real[28];
+        b60_wimg    = w_img[28];
 
         // k = 29, b61
         b61_xp_real = st6_real[117];
         b61_xp_img  = st6_img[117];
         b61_xq_real = st6_real[119];
         b61_xq_img  = st6_img[119];
-        b61_wreal   = w_real[46];
-        b61_wimg    = w_img[46];
+        b61_wreal   = w_real[92];
+        b61_wimg    = w_img[92];
 
         // k = 30, b62
         b62_xp_real = st6_real[121];
         b62_xp_img  = st6_img[121];
         b62_xq_real = st6_real[123];
         b62_xq_img  = st6_img[123];
-        b62_wreal   = w_real[30];
-        b62_wimg    = w_img[30];
+        b62_wreal   = w_real[60];
+        b62_wimg    = w_img[60];
 
         // k = 31, b63
         b63_xp_real = st6_real[125];
         b63_xp_img  = st6_img[125];
         b63_xq_real = st6_real[127];
         b63_xq_img  = st6_img[127];
-        b63_wreal   = w_real[62];
-        b63_wimg    = w_img[62];
+        b63_wreal   = w_real[124];
+        b63_wimg    = w_img[124];
     end
     else if (cnt == 264) begin // stage 7
         // k = 0, b32
@@ -1686,256 +1702,256 @@ always @(*) begin
         b32_xp_img  = st6_img[128];
         b32_xq_real = st6_real[130];
         b32_xq_img  = st6_img[130];
-        b32_wreal   = w_real[1];
-        b32_wimg    = w_img[1];
+        b32_wreal   = w_real[2];
+        b32_wimg    = w_img[2];
 
         // k = 1, b33
         b33_xp_real = st6_real[132];
         b33_xp_img  = st6_img[132];
         b33_xq_real = st6_real[134];
         b33_xq_img  = st6_img[134];
-        b33_wreal   = w_real[33];
-        b33_wimg    = w_img[33];
+        b33_wreal   = w_real[66];
+        b33_wimg    = w_img[66];
 
         // k = 2, b34
         b34_xp_real = st6_real[136];
         b34_xp_img  = st6_img[136];
         b34_xq_real = st6_real[138];
         b34_xq_img  = st6_img[138];
-        b34_wreal   = w_real[17];
-        b34_wimg    = w_img[17];
+        b34_wreal   = w_real[34];
+        b34_wimg    = w_img[34];
 
         // k = 3, b35
         b35_xp_real = st6_real[140];
         b35_xp_img  = st6_img[140];
         b35_xq_real = st6_real[142];
         b35_xq_img  = st6_img[142];
-        b35_wreal   = w_real[49];
-        b35_wimg    = w_img[49];
+        b35_wreal   = w_real[98];
+        b35_wimg    = w_img[98];
 
         // k = 4, b36
         b36_xp_real = st6_real[144];
         b36_xp_img  = st6_img[144];
         b36_xq_real = st6_real[146];
         b36_xq_img  = st6_img[146];
-        b36_wreal   = w_real[9];
-        b36_wimg    = w_img[9];
+        b36_wreal   = w_real[18];
+        b36_wimg    = w_img[18];
 
         // k = 5, b37
         b37_xp_real = st6_real[148];
         b37_xp_img  = st6_img[148];
         b37_xq_real = st6_real[150];
         b37_xq_img  = st6_img[150];
-        b37_wreal   = w_real[41];
-        b37_wimg    = w_img[41];
+        b37_wreal   = w_real[82];
+        b37_wimg    = w_img[82];
 
         // k = 6, b38
         b38_xp_real = st6_real[152];
         b38_xp_img  = st6_img[152];
         b38_xq_real = st6_real[154];
         b38_xq_img  = st6_img[154];
-        b38_wreal   = w_real[25];
-        b38_wimg    = w_img[25];
+        b38_wreal   = w_real[50];
+        b38_wimg    = w_img[50];
 
         // k = 7, b39
         b39_xp_real = st6_real[156];
         b39_xp_img  = st6_img[156];
         b39_xq_real = st6_real[158];
         b39_xq_img  = st6_img[158];
-        b39_wreal   = w_real[57];
-        b39_wimg    = w_img[57];
+        b39_wreal   = w_real[114];
+        b39_wimg    = w_img[114];
 
         // k = 8, b40
         b40_xp_real = st6_real[160];
         b40_xp_img  = st6_img[160];
         b40_xq_real = st6_real[162];
         b40_xq_img  = st6_img[162];
-        b40_wreal   = w_real[5];
-        b40_wimg    = w_img[5];
+        b40_wreal   = w_real[10];
+        b40_wimg    = w_img[10];
 
         // k = 9, b41
         b41_xp_real = st6_real[164];
         b41_xp_img  = st6_img[164];
         b41_xq_real = st6_real[166];
         b41_xq_img  = st6_img[166];
-        b41_wreal   = w_real[37];
-        b41_wimg    = w_img[37];
+        b41_wreal   = w_real[114];
+        b41_wimg    = w_img[114];
 
         // k = 10, b42
         b42_xp_real = st6_real[168];
         b42_xp_img  = st6_img[168];
         b42_xq_real = st6_real[170];
         b42_xq_img  = st6_img[170];
-        b42_wreal   = w_real[21];
-        b42_wimg    = w_img[21];
+        b42_wreal   = w_real[42];
+        b42_wimg    = w_img[42];
 
         // k = 11, b43
         b43_xp_real = st6_real[172];
         b43_xp_img  = st6_img[172];
         b43_xq_real = st6_real[174];
         b43_xq_img  = st6_img[174];
-        b43_wreal   = w_real[53];
-        b43_wimg    = w_img[53];
+        b43_wreal   = w_real[106];
+        b43_wimg    = w_img[106];
 
         // k = 12, b44
         b44_xp_real = st6_real[176];
         b44_xp_img  = st6_img[176];
         b44_xq_real = st6_real[178];
         b44_xq_img  = st6_img[178];
-        b44_wreal   = w_real[13];
-        b44_wimg    = w_img[13];
+        b44_wreal   = w_real[26];
+        b44_wimg    = w_img[26];
 
         // k = 13, b45
         b45_xp_real = st6_real[180];
         b45_xp_img  = st6_img[180];
         b45_xq_real = st6_real[182];
         b45_xq_img  = st6_img[182];
-        b45_wreal   = w_real[45];
-        b45_wimg    = w_img[45];
+        b45_wreal   = w_real[90];
+        b45_wimg    = w_img[90];
 
         // k = 14, b46
         b46_xp_real = st6_real[184];
         b46_xp_img  = st6_img[184];
         b46_xq_real = st6_real[186];
         b46_xq_img  = st6_img[186];
-        b46_wreal   = w_real[29];
-        b46_wimg    = w_img[29];
+        b46_wreal   = w_real[58];
+        b46_wimg    = w_img[58];
 
         // k = 15, b47
         b47_xp_real = st6_real[188];
         b47_xp_img  = st6_img[188];
         b47_xq_real = st6_real[190];
         b47_xq_img  = st6_img[190];
-        b47_wreal   = w_real[61];
-        b47_wimg    = w_img[61];
+        b47_wreal   = w_real[122];
+        b47_wimg    = w_img[122];
 
         // k = 16, b48
         b48_xp_real = st6_real[192];
         b48_xp_img  = st6_img[192];
         b48_xq_real = st6_real[194];
         b48_xq_img  = st6_img[194];
-        b48_wreal   = w_real[3];
-        b48_wimg    = w_img[3];
+        b48_wreal   = w_real[6];
+        b48_wimg    = w_img[6];
 
         // k = 17, b49
         b49_xp_real = st6_real[196];
         b49_xp_img  = st6_img[196];
         b49_xq_real = st6_real[198];
         b49_xq_img  = st6_img[198];
-        b49_wreal   = w_real[35];
-        b49_wimg    = w_img[35];
+        b49_wreal   = w_real[70];
+        b49_wimg    = w_img[70];
 
         // k = 18, b50
         b50_xp_real = st6_real[200];
         b50_xp_img  = st6_img[200];
         b50_xq_real = st6_real[202];
         b50_xq_img  = st6_img[202];
-        b50_wreal   = w_real[19];
-        b50_wimg    = w_img[19];
+        b50_wreal   = w_real[38];
+        b50_wimg    = w_img[38];
 
         // k = 19, b51
         b51_xp_real = st6_real[204];
         b51_xp_img  = st6_img[204];
         b51_xq_real = st6_real[206];
         b51_xq_img  = st6_img[206];
-        b51_wreal   = w_real[51];
-        b51_wimg    = w_img[51];
+        b51_wreal   = w_real[102];
+        b51_wimg    = w_img[102];
 
         // k = 20, b52
         b52_xp_real = st6_real[208];
         b52_xp_img  = st6_img[208];
         b52_xq_real = st6_real[210];
         b52_xq_img  = st6_img[210];
-        b52_wreal   = w_real[11];
-        b52_wimg    = w_img[11];
+        b52_wreal   = w_real[22];
+        b52_wimg    = w_img[22];
 
         // k = 21, b53
         b53_xp_real = st6_real[212];
         b53_xp_img  = st6_img[212];
         b53_xq_real = st6_real[214];
         b53_xq_img  = st6_img[214];
-        b53_wreal   = w_real[43];
-        b53_wimg    = w_img[43];
+        b53_wreal   = w_real[86];
+        b53_wimg    = w_img[86];
 
         // k = 22, b54
         b54_xp_real = st6_real[216];
         b54_xp_img  = st6_img[216];
         b54_xq_real = st6_real[218];
         b54_xq_img  = st6_img[218];
-        b54_wreal   = w_real[27];
-        b54_wimg    = w_img[27];
+        b54_wreal   = w_real[54];
+        b54_wimg    = w_img[54];
 
         // k = 23, b55
         b55_xp_real = st6_real[220];
         b55_xp_img  = st6_img[220];
         b55_xq_real = st6_real[222];
         b55_xq_img  = st6_img[222];
-        b55_wreal   = w_real[59];
-        b55_wimg    = w_img[59];
+        b55_wreal   = w_real[118];
+        b55_wimg    = w_img[118];
 
         // k = 24, b56
         b56_xp_real = st6_real[224];
         b56_xp_img  = st6_img[224];
         b56_xq_real = st6_real[226];
         b56_xq_img  = st6_img[226];
-        b56_wreal   = w_real[7];
-        b56_wimg    = w_img[7];
+        b56_wreal   = w_real[14];
+        b56_wimg    = w_img[14];
 
         // k = 25, b57
         b57_xp_real = st6_real[228];
         b57_xp_img  = st6_img[228];
         b57_xq_real = st6_real[230];
         b57_xq_img  = st6_img[230];
-        b57_wreal   = w_real[39];
-        b57_wimg    = w_img[39];
+        b57_wreal   = w_real[78];
+        b57_wimg    = w_img[78];
 
         // k = 26, b58
         b58_xp_real = st6_real[232];
         b58_xp_img  = st6_img[232];
         b58_xq_real = st6_real[234];
         b58_xq_img  = st6_img[234];
-        b58_wreal   = w_real[23];
-        b58_wimg    = w_img[23];
+        b58_wreal   = w_real[46];
+        b58_wimg    = w_img[46];
 
         // k = 27, b59
         b59_xp_real = st6_real[236];
         b59_xp_img  = st6_img[236];
         b59_xq_real = st6_real[238];
         b59_xq_img  = st6_img[238];
-        b59_wreal   = w_real[55];
-        b59_wimg    = w_img[55];
+        b59_wreal   = w_real[110];
+        b59_wimg    = w_img[110];
 
         // k = 28, b60
         b60_xp_real = st6_real[240];
         b60_xp_img  = st6_img[240];
         b60_xq_real = st6_real[242];
         b60_xq_img  = st6_img[242];
-        b60_wreal   = w_real[15];
-        b60_wimg    = w_img[15];
+        b60_wreal   = w_real[30];
+        b60_wimg    = w_img[30];
 
         // k = 29, b61
         b61_xp_real = st6_real[244];
         b61_xp_img  = st6_img[244];
         b61_xq_real = st6_real[246];
         b61_xq_img  = st6_img[246];
-        b61_wreal   = w_real[47];
-        b61_wimg    = w_img[47];
+        b61_wreal   = w_real[94];
+        b61_wimg    = w_img[94];
 
         // k = 30, b62
         b62_xp_real = st6_real[248];
         b62_xp_img  = st6_img[248];
         b62_xq_real = st6_real[250];
         b62_xq_img  = st6_img[250];
-        b62_wreal   = w_real[31];
-        b62_wimg    = w_img[31];
+        b62_wreal   = w_real[62];
+        b62_wimg    = w_img[62];
 
         // k = 31, b63
         b63_xp_real = st6_real[252];
         b63_xp_img  = st6_img[252];
         b63_xq_real = st6_real[254];
         b63_xq_img  = st6_img[254];
-        b63_wreal   = w_real[63];
-        b63_wimg    = w_img[63];  
+        b63_wreal   = w_real[126];
+        b63_wimg    = w_img[126];  
     end
     else if (cnt == 265) begin // stage 7
         // k = 0, b32
@@ -1943,258 +1959,261 @@ always @(*) begin
         b32_xp_img  = st6_img[129];
         b32_xq_real = st6_real[131];
         b32_xq_img  = st6_img[131];
-        b32_wreal   = w_real[1];
-        b32_wimg    = w_img[1];
+        b32_wreal   = w_real[2];
+        b32_wimg    = w_img[2];
 
         // k = 1, b33
         b33_xp_real = st6_real[133];
         b33_xp_img  = st6_img[133];
         b33_xq_real = st6_real[135];
         b33_xq_img  = st6_img[135];
-        b33_wreal   = w_real[33];
-        b33_wimg    = w_img[33];
+        b33_wreal   = w_real[66];
+        b33_wimg    = w_img[66];
 
         // k = 2, b34
         b34_xp_real = st6_real[137];
         b34_xp_img  = st6_img[137];
         b34_xq_real = st6_real[139];
         b34_xq_img  = st6_img[139];
-        b34_wreal   = w_real[17];
-        b34_wimg    = w_img[17];
+        b34_wreal   = w_real[34];
+        b34_wimg    = w_img[34];
 
         // k = 3, b35
         b35_xp_real = st6_real[141];
         b35_xp_img  = st6_img[141];
         b35_xq_real = st6_real[143];
         b35_xq_img  = st6_img[143];
-        b35_wreal   = w_real[49];
-        b35_wimg    = w_img[49];
+        b35_wreal   = w_real[98];
+        b35_wimg    = w_img[98];
 
         // k = 4, b36
         b36_xp_real = st6_real[145];
         b36_xp_img  = st6_img[145];
         b36_xq_real = st6_real[147];
         b36_xq_img  = st6_img[147];
-        b36_wreal   = w_real[9];
-        b36_wimg    = w_img[9];
+        b36_wreal   = w_real[18];
+        b36_wimg    = w_img[18];
 
         // k = 5, b37
         b37_xp_real = st6_real[149];
         b37_xp_img  = st6_img[149];
         b37_xq_real = st6_real[151];
         b37_xq_img  = st6_img[151];
-        b37_wreal   = w_real[41];
-        b37_wimg    = w_img[41];
+        b37_wreal   = w_real[82];
+        b37_wimg    = w_img[82];
 
         // k = 6, b38
         b38_xp_real = st6_real[153];
         b38_xp_img  = st6_img[153];
         b38_xq_real = st6_real[155];
         b38_xq_img  = st6_img[155];
-        b38_wreal   = w_real[25];
-        b38_wimg    = w_img[25];
+        b38_wreal   = w_real[50];
+        b38_wimg    = w_img[50];
 
         // k = 7, b39
         b39_xp_real = st6_real[157];
         b39_xp_img  = st6_img[157];
         b39_xq_real = st6_real[159];
         b39_xq_img  = st6_img[159];
-        b39_wreal   = w_real[57];
-        b39_wimg    = w_img[57];
+        b39_wreal   = w_real[114];
+        b39_wimg    = w_img[114];
 
         // k = 8, b40
         b40_xp_real = st6_real[161];
         b40_xp_img  = st6_img[161];
         b40_xq_real = st6_real[163];
         b40_xq_img  = st6_img[163];
-        b40_wreal   = w_real[5];
-        b40_wimg    = w_img[5];
+        b40_wreal   = w_real[10];
+        b40_wimg    = w_img[10];
 
         // k = 9, b41
         b41_xp_real = st6_real[165];
         b41_xp_img  = st6_img[165];
         b41_xq_real = st6_real[167];
         b41_xq_img  = st6_img[167];
-        b41_wreal   = w_real[37];
-        b41_wimg    = w_img[37];
+        b41_wreal   = w_real[114];
+        b41_wimg    = w_img[114];
 
         // k = 10, b42
         b42_xp_real = st6_real[169];
         b42_xp_img  = st6_img[169];
         b42_xq_real = st6_real[171];
         b42_xq_img  = st6_img[171];
-        b42_wreal   = w_real[21];
-        b42_wimg    = w_img[21];
+        b42_wreal   = w_real[42];
+        b42_wimg    = w_img[42];
 
         // k = 11, b43
         b43_xp_real = st6_real[173];
         b43_xp_img  = st6_img[173];
         b43_xq_real = st6_real[175];
         b43_xq_img  = st6_img[175];
-        b43_wreal   = w_real[53];
-        b43_wimg    = w_img[53];
+        b43_wreal   = w_real[106];
+        b43_wimg    = w_img[106];
 
         // k = 12, b44
         b44_xp_real = st6_real[177];
         b44_xp_img  = st6_img[177];
         b44_xq_real = st6_real[179];
         b44_xq_img  = st6_img[179];
-        b44_wreal   = w_real[13];
-        b44_wimg    = w_img[13];
+        b44_wreal   = w_real[26];
+        b44_wimg    = w_img[26];
 
         // k = 13, b45
         b45_xp_real = st6_real[181];
         b45_xp_img  = st6_img[181];
         b45_xq_real = st6_real[183];
         b45_xq_img  = st6_img[183];
-        b45_wreal   = w_real[45];
-        b45_wimg    = w_img[45];
+        b45_wreal   = w_real[90];
+        b45_wimg    = w_img[90];
 
         // k = 14, b46
         b46_xp_real = st6_real[185];
         b46_xp_img  = st6_img[185];
         b46_xq_real = st6_real[187];
         b46_xq_img  = st6_img[187];
-        b46_wreal   = w_real[29];
-        b46_wimg    = w_img[29];
+        b46_wreal   = w_real[58];
+        b46_wimg    = w_img[58];
 
         // k = 15, b47
         b47_xp_real = st6_real[189];
         b47_xp_img  = st6_img[189];
         b47_xq_real = st6_real[191];
         b47_xq_img  = st6_img[191];
-        b47_wreal   = w_real[61];
-        b47_wimg    = w_img[61];
+        b47_wreal   = w_real[122];
+        b47_wimg    = w_img[122];
 
         // k = 16, b48
         b48_xp_real = st6_real[193];
         b48_xp_img  = st6_img[193];
         b48_xq_real = st6_real[195];
         b48_xq_img  = st6_img[195];
-        b48_wreal   = w_real[3];
-        b48_wimg    = w_img[3];
+        b48_wreal   = w_real[6];
+        b48_wimg    = w_img[6];
 
         // k = 17, b49
         b49_xp_real = st6_real[197];
         b49_xp_img  = st6_img[197];
         b49_xq_real = st6_real[199];
         b49_xq_img  = st6_img[199];
-        b49_wreal   = w_real[35];
-        b49_wimg    = w_img[35];
+        b49_wreal   = w_real[70];
+        b49_wimg    = w_img[70];
 
         // k = 18, b50
         b50_xp_real = st6_real[201];
         b50_xp_img  = st6_img[201];
         b50_xq_real = st6_real[203];
         b50_xq_img  = st6_img[203];
-        b50_wreal   = w_real[19];
-        b50_wimg    = w_img[19];
+        b50_wreal   = w_real[38];
+        b50_wimg    = w_img[38];
 
         // k = 19, b51
         b51_xp_real = st6_real[205];
         b51_xp_img  = st6_img[205];
         b51_xq_real = st6_real[207];
         b51_xq_img  = st6_img[207];
-        b51_wreal   = w_real[51];
-        b51_wimg    = w_img[51];
+        b51_wreal   = w_real[102];
+        b51_wimg    = w_img[102];
 
         // k = 20, b52
         b52_xp_real = st6_real[209];
         b52_xp_img  = st6_img[209];
         b52_xq_real = st6_real[211];
         b52_xq_img  = st6_img[211];
-        b52_wreal   = w_real[11];
-        b52_wimg    = w_img[11];
+        b52_wreal   = w_real[22];
+        b52_wimg    = w_img[22];
 
         // k = 21, b53
         b53_xp_real = st6_real[213];
         b53_xp_img  = st6_img[213];
         b53_xq_real = st6_real[215];
         b53_xq_img  = st6_img[215];
-        b53_wreal   = w_real[43];
-        b53_wimg    = w_img[43];
+        b53_wreal   = w_real[86];
+        b53_wimg    = w_img[86];
 
         // k = 22, b54
         b54_xp_real = st6_real[217];
         b54_xp_img  = st6_img[217];
         b54_xq_real = st6_real[219];
         b54_xq_img  = st6_img[219];
-        b54_wreal   = w_real[27];
-        b54_wimg    = w_img[27];
+        b54_wreal   = w_real[54];
+        b54_wimg    = w_img[54];
 
         // k = 23, b55
         b55_xp_real = st6_real[221];
         b55_xp_img  = st6_img[221];
         b55_xq_real = st6_real[223];
         b55_xq_img  = st6_img[223];
-        b55_wreal   = w_real[59];
-        b55_wimg    = w_img[59];
+        b55_wreal   = w_real[118];
+        b55_wimg    = w_img[118];
 
         // k = 24, b56
         b56_xp_real = st6_real[225];
         b56_xp_img  = st6_img[225];
         b56_xq_real = st6_real[227];
         b56_xq_img  = st6_img[227];
-        b56_wreal   = w_real[7];
-        b56_wimg    = w_img[7];
+        b56_wreal   = w_real[14];
+        b56_wimg    = w_img[14];
 
         // k = 25, b57
         b57_xp_real = st6_real[229];
         b57_xp_img  = st6_img[229];
         b57_xq_real = st6_real[231];
         b57_xq_img  = st6_img[231];
-        b57_wreal   = w_real[39];
-        b57_wimg    = w_img[39];
+        b57_wreal   = w_real[78];
+        b57_wimg    = w_img[78];
 
         // k = 26, b58
         b58_xp_real = st6_real[233];
         b58_xp_img  = st6_img[233];
         b58_xq_real = st6_real[235];
         b58_xq_img  = st6_img[235];
-        b58_wreal   = w_real[23];
-        b58_wimg    = w_img[23];
+        b58_wreal   = w_real[46];
+        b58_wimg    = w_img[46];
 
         // k = 27, b59
         b59_xp_real = st6_real[237];
         b59_xp_img  = st6_img[237];
         b59_xq_real = st6_real[239];
         b59_xq_img  = st6_img[239];
-        b59_wreal   = w_real[55];
-        b59_wimg    = w_img[55];
+        b59_wreal   = w_real[110];
+        b59_wimg    = w_img[110];
 
         // k = 28, b60
         b60_xp_real = st6_real[241];
         b60_xp_img  = st6_img[241];
         b60_xq_real = st6_real[243];
         b60_xq_img  = st6_img[243];
-        b60_wreal   = w_real[15];
-        b60_wimg    = w_img[15];
+        b60_wreal   = w_real[30];
+        b60_wimg    = w_img[30];
 
         // k = 29, b61
         b61_xp_real = st6_real[245];
         b61_xp_img  = st6_img[245];
         b61_xq_real = st6_real[247];
         b61_xq_img  = st6_img[247];
-        b61_wreal   = w_real[47];
-        b61_wimg    = w_img[47];
+        b61_wreal   = w_real[94];
+        b61_wimg    = w_img[94];
 
         // k = 30, b62
         b62_xp_real = st6_real[249];
         b62_xp_img  = st6_img[249];
         b62_xq_real = st6_real[251];
         b62_xq_img  = st6_img[251];
-        b62_wreal   = w_real[31];
-        b62_wimg    = w_img[31];
+        b62_wreal   = w_real[62];
+        b62_wimg    = w_img[62];
 
         // k = 31, b63
         b63_xp_real = st6_real[253];
         b63_xp_img  = st6_img[253];
         b63_xq_real = st6_real[255];
         b63_xq_img  = st6_img[255];
-        b63_wreal   = w_real[63];
-        b63_wimg    = w_img[63];
+        b63_wreal   = w_real[126];
+        b63_wimg    = w_img[126];
         
     end
+// ========================================
+// Stage 8
+// ========================================    
     else if (cnt == 266) begin
         // k = 0, b32
         b32_xp_real = st6_real[0]; 

@@ -1,0 +1,21 @@
+# Radix-2 DIT FFT twiddle schedule
+# Fields: stage, order_in_stage, top_idx, bot_idx, twiddle_idx
+
+## Stage 0  (diff=4, group_size=8, num_groups=1)
+00, 000, 000, 004, 000
+00, 001, 001, 005, 000
+00, 002, 002, 006, 000
+00, 003, 003, 007, 000
+
+## Stage 1  (diff=2, group_size=4, num_groups=2)
+01, 000, 000, 002, 000
+01, 001, 001, 003, 000
+01, 002, 004, 006, 002
+01, 003, 005, 007, 002
+
+## Stage 2  (diff=1, group_size=2, num_groups=4)
+02, 000, 000, 001, 000
+02, 001, 002, 003, 002
+02, 002, 004, 005, 001
+02, 003, 006, 007, 003
+

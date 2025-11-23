@@ -72,6 +72,6 @@ if __name__ == "__main__":
     dump_fft_twiddle_dit(N=256)
 
     # 如果想驗證 8-點的 pattern，改成：
-    # dump_fft_twiddle_dit(N=8,
-    #     twiddle_schedule_file="fft8_twiddle_custom.txt",
-    #     twiddle_table_file="fft8_W_table.txt")
+    dump_fft_twiddle_dit(N=8,
+         twiddle_schedule_file="fft8_twiddle_custom.txt",
+         twiddle_table_file="fft8_W_table.txt")
