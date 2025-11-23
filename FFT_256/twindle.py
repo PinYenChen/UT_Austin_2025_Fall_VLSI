@@ -1,63 +1,77 @@
 import math
 import cmath
 
-N = 256
-NUM_STAGES = int(math.log2(N))
+def bit_reverse(x: int, bits: int) -> int:
+    """Reverse lowest 'bits' bits of x."""
+    r = 0
+    for i in range(bits):
+        r = (r << 1) | ((x >> i) & 1)
+    return r
 
-twiddle_schedule_file = "fft256_twiddle_DIT.txt"
-twiddle_table_file    = "fft256_W_table.txt"
+def dump_fft_twiddle_dit(
+    N=256,
+    twiddle_schedule_file="fft256_twiddle_custom.txt",
+    twiddle_table_file="fft256_W_table.txt",
+):
+    """
+    Radix-2 DIT FFT twiddle schedule
+    - stage 編號 s = 0..log2(N)-1（從左到右）
+    - 在同一個 stage 中，butterfly 是照你說的「從上到下」排序。
+    """
 
-# ------------------------------------------------------------
-# 1) 產生 W[k] table: W[k] = exp(-j*2*pi*k/N)
-# ------------------------------------------------------------
-W = [cmath.exp(-2j * math.pi * k / N) for k in range(N)]
+    num_stages = int(math.log2(N))
 
-with open(twiddle_table_file, "w") as fw:
-    fw.write("# 256-point FFT twiddle table W[k] = exp(-j*2*pi*k/256)\n")
-    fw.write("# k,  Re{W[k]},  Im{W[k]}\n\n")
-    for k, w in enumerate(W):
-        fw.write(f"{k:3d}, {w.real:+.15f}, {w.imag:+.15f}\n")
+    # 1) 產生 W[k] table: W[k] = exp(-j*2*pi*k/N)
+    W = [cmath.exp(-2j * math.pi * k / N) for k in range(N)]
 
-# ------------------------------------------------------------
-# 2) 產生 radix-2 DIT FFT 的 twiddle 使用表
-#
-# DIT，stage 從 0 開始（最左邊那層）：
-#   m           = 2^(stage+1)   # 這一層每個 group 的長度
-#   half        = m / 2
-#   stride      = N / m
-#   group 起點 j = 0, m, 2m, ...
-#   group 內第 k 個 butterfly:
-#       top  index = j + k
-#       bottom index = j + k + half
-#       twiddle index = stride * k
-#
-# 注意：stage 0 => m=2, stride=N/2=128，但 k 只有 0
-#       所以所有 twiddle index = 0  (W[0])，符合你圖上「第一層都是 W^0_N」。
-# ------------------------------------------------------------
-with open(twiddle_schedule_file, "w") as f:
-    f.write("# 256-point radix-2 DIT FFT twiddle schedule\n")
-    f.write("# Fields: stage, local_bfly, top_idx, bottom_idx, twiddle_idx\n\n")
+    with open(twiddle_table_file, "w") as fw:
+        fw.write(f"# W[k] = exp(-j*2*pi*k/{N})\n")
+        fw.write("# k, Re(W[k]), Im(W[k])\n")
+        for k, w in enumerate(W):
+            fw.write(f"{k:3d}, {w.real:+.15f}, {w.imag:+.15f}\n")
 
-    for stage in range(NUM_STAGES):
-        m = 2 ** (stage + 1)
-        half = m // 2
-        stride = N // m
+    # 2) 產生每一層 twiddle 使用表
+    with open(twiddle_schedule_file, "w") as f:
+        f.write("# Radix-2 DIT FFT twiddle schedule\n")
+        f.write("# Fields: stage, order_in_stage, top_idx, bot_idx, twiddle_idx\n\n")
 
-        f.write(f"## Stage {stage}  (m={m}, half={half}, stride={stride})\n")
-        local_bfly = 0
+        for s in range(num_stages):
+            diff = N >> (s + 1)         # 上下 index 差
+            group_size = 2 * diff
+            num_groups = N // group_size
 
-        for group_start in range(0, N, m):
-            for k in range(half):
-                top = group_start + k
-                bot = group_start + k + half
-                tw_idx = stride * k   # 這個 butterfly 要用的 W index
+            f.write(f"## Stage {s}  (diff={diff}, group_size={group_size}, "
+                    f"num_groups={num_groups})\n")
 
-                f.write(f"{stage:02d}, {local_bfly:03d}, "
-                        f"{top:03d}, {bot:03d}, {tw_idx:03d}\n")
-                local_bfly += 1
+            order_in_stage = 0
 
-        f.write("\n")
+            # 先跑 group（從上到下），每一個 group 的 twiddle 固定
+            for g in range(num_groups):
+                # 這一群使用的 twiddle index
+                tw_idx = diff * bit_reverse(g, s) if s > 0 else 0
 
-print("Done!")
-print(f"Twiddle schedule -> {twiddle_schedule_file}")
-print(f"W table          -> {twiddle_table_file}")
+                for k in range(diff):
+                    top = g * group_size + k
+                    bot = top + diff
+
+                    f.write(
+                        f"{s:02d}, {order_in_stage:03d}, "
+                        f"{top:03d}, {bot:03d}, {tw_idx:03d}\n"
+                    )
+                    order_in_stage += 1
+
+            f.write("\n")
+
+    print("Done!")
+    print(f"Twiddle schedule -> {twiddle_schedule_file}")
+    print(f"W table          -> {twiddle_table_file}")
+
+
+if __name__ == "__main__":
+    # 你要 256 點就用這行
+    dump_fft_twiddle_dit(N=256)
+
+    # 如果想驗證 8-點的 pattern，改成：
+    # dump_fft_twiddle_dit(N=8,
+    #     twiddle_schedule_file="fft8_twiddle_custom.txt",
+    #     twiddle_table_file="fft8_W_table.txt")
