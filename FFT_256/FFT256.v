@@ -276,9 +276,8 @@ assign w_img[127] = 16'hfcdc; // -0.0245
 integer i;
 localparam [1:0]
   IDLE    ='d0,
-  CAL_IN ='d1,
-  READ_SSP    ='d2,
-  WRITE_SSP ='d3;
+  CAL_IN ='d1;
+
 reg [2:0] cur_state, nxt_state;
 always @(posedge clk) begin
     if (!rst_n) begin
@@ -289,10 +288,11 @@ end
 always @(*) begin
     case(cur_state) 
         IDLE: if (in_valid) nxt_state = CAL_IN;
+        CAL_IN: if (cnt == 255) nxt_state = IDLE;
     endcase
 end
 always @(posedge clk) begin
-	if (!rst_i) begin
+	if (!rst_n) begin
 		cur_state <= IDLE;
 	end
 	else begin
@@ -4714,6 +4714,46 @@ always @(posedge clk) begin
         
     end
 end
+reg [7:0] out_cnt;
+always @(posedge clk) begin
+    if (!rst_n) begin
+        out_cnt <= 0;
+    end
+    else begin
+        if (cnt == 268) begin
+            out_cnt <= out_cnt + 1;
+        end
+    end
+end
+always @(posedge clk) begin
+    if (!rst_n) begin
+        out_valid <= 0;
+    end
+    else begin
+        if (cnt == 267 || (out_cnt > 0 && out_cnt != 255)) begin
+            out_valid <= 1;
+        end
+        else if (out_cnt == 255) begin
+            out_valid <= 0;
+        end
+    end
+end
+always @(posedge clk) begin
+    if (!rst_n) begin
+        out_yp_real <= 0;
+        out_yp_img <= 0;
+    end
+    else begin
+        if (cnt == 267 || (out_cnt > 0 && out_cnt != 255)) begin
+            out_yp_real <= st6_real[out_cnt];
+            out_yp_img <= st6_img[out_cnt];
+        end
+        else if (out_cnt == 255) begin
+            out_yp_real <= 0;
+            out_yp_img <= 0;            
+        end
+    end
+end
 
 // stage 7 suppose to use another 64 butterfly but consider the area that it may have, I built it by using Pipeline(4stage).
 // stage 8 suppose to use another 128 butterfly but consider the area that it may have, I built it by using Pipeline (8stage).
@@ -4803,6 +4843,9 @@ always @(posedge clk) begin
     else begin
         if (in_valid || in_cnt != 0) begin
             cnt <= cnt + 1;
+        end
+        else if (cur_state == IDLE) begin
+            cnt <= 0;
         end
     end
 end
