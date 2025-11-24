@@ -6,7 +6,7 @@ N = 256
 # ---------- Q1.15 參數 ----------
 Q_FRAC = 15
 Q_SCALE = 1 << Q_FRAC  # 32768
-
+'''
 def float_to_q15(x: float) -> int:
     """
     float -> Q1.15 (int16)
@@ -24,6 +24,17 @@ def float_to_q15(x: float) -> int:
         q = -32768
 
     return int(q)
+'''
+def float_to_q15(x: float) -> int:
+    scaled = x * 32768.0
+    # 模擬 SystemVerilog $rtoi / truncate：直接砍掉小數
+    q = int(scaled)          # 或 math.trunc(scaled)
+
+    if q >  32767:
+        q =  32767
+    if q < -32768:
+        q = -32768
+    return q
 
 # ============================================================
 # 1) 產生隨機 Q1.15 input（real, imag 各 256 筆）
