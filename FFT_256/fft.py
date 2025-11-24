@@ -1,128 +1,74 @@
-'''
-for i in range(0, 256, 16):
-    line = ", ".join(f"x{k}_img" for k in range(i, i + 16))
-    print("    " + line + ",")
-
-for k in range(256):
-    print(f"output signed [15:0] y{k}_real;")
-    print(f"output signed [15:0] y{k}_img;")
-
-
+import numpy as np
 import math
 
 N = 256
-for k in range(N//2):
-    c = math.cos(2*math.pi*k/N)
-    s = -math.sin(2*math.pi*k/N)
-    w_real = int(round(c * (1<<15))) & 0xFFFF
-    w_imag = int(round(s * (1<<15))) & 0xFFFF
-    print(f"assign w_real[{k}] = 16'h{w_real:04x}; // {c:.4f}")
-    print(f"assign w_imag[{k}] = 16'h{w_imag:04x}; // {s:.4f}")
-'''
-'''
-for k in range (256):
-    print(f"reg signed [15:0] xp_real_fly_reg{k}, xp_img_fly_reg{k}, xq_real_fly_reg{k}, xq_img_fly_reg{k};")
 
-for i in range(0, 256, 64):
-    names = ", ".join(f"w{k}_img" for k in range(i, i + 64))
-    print(f"wire {names};")
-'''
-line = "butterfly B2 (.xp_real(b2_xp_real), .xp_img(b2_xp_img), .xq_real(b2_xq_real), .xq_img(b2_xq_img), .w_real(b2_wreal), .w_img(b2_img), .yp_real(b2_ypreal), .yp_img(b2_ypimg), .yq_real(b2_yqreal), .yq_img(b2_yqimg));"
+# ---------- Q1.15 參數 ----------
+Q_FRAC = 15
+Q_SCALE = 1 << Q_FRAC  # 32768
 
-# 把所有的 "2" 換成 "3"
-for k in range(32,64):
-    line_new = line.replace("2", str(k))
-    print(line_new)
-'''
-bases = [
-    0, 5, 10, 15, 20, 25, 30, 35,
-    40, 45, 50, 55, 60, 65, 70, 75,
-    80, 85, 90, 95, 100, 105, 110, 115,
-    120, 125, 130, 135, 140, 145, 150, 155
-]
-
-print("        for (integer i = 0 ; i < 4 ; i++) begin")
-for b in bases:
-    if b == 0:
-        left_idx  = "i"
-        right_idx = "i+1"
+def float_to_q15(x: float) -> int:
+    """
+    float -> Q1.15 (int16)
+    模擬四捨五入 + 飽和到 [-32768, 32767]
+    """
+    scaled = x * Q_SCALE
+    if scaled >= 0:
+        q = math.floor(scaled + 0.5)
     else:
-        left_idx  = f"{b} + i"
-        right_idx = f"{b+1} + i"   # 右邊 = 左邊 + 1
-    print(f"            st5_real[{left_idx}] <= st5_real[{right_idx}];")
-    print(f"            st5_img[{left_idx}]  <= st5_img[{right_idx}];")
-print("        end")
-'''
-def bit_reverse(x, bits):
-    return int('{:0{b}b}'.format(x, b=bits)[::-1], 2)
+        q = math.ceil(scaled - 0.5)
 
-start_b = 32
-end_b = 63
+    if q >  32767:
+        q =  32767
+    if q < -32768:
+        q = -32768
 
-N = 256
-stage = 6
-L = 2 ** stage
-step = N // L      # = 4
-bits = 5           # 32 butterflies → index: 0..31
+    return int(q)
 
-print("always @(*) begin")
-print("    if (cnt > 257 && cnt < 262) begin")
+# ============================================================
+# 1) 產生隨機 Q1.15 input（real, imag 各 256 筆）
+# ============================================================
+# 直接在整數範圍 [-32768, 32767] 取值
+xp_real_q15 = np.random.randint(-32768, 32768, size=N, dtype=np.int16)
+xp_img_q15  = np.random.randint(-32768, 32768, size=N, dtype=np.int16)
 
-for b in range(start_b, end_b + 1):
-    i = b - start_b
-    xp_idx = 5 * i
-    xq_idx = xp_idx + 4
-    w_idx = bit_reverse(i, bits) * step
+# 輸出成 16 進位 TXT：每行 "REAL IMAG"
+# 負數也會用 two's complement：例如 -1 -> FFFF
+with open("fft_input_q15_hex.txt", "w") as f:
+    for r, im in zip(xp_real_q15, xp_img_q15):
+        f.write(f"{(int(r) & 0xFFFF):04X} {(int(im) & 0xFFFF):04X}\n")
 
-    print(f"        b{b}_xp_real = st5_real[{xp_idx}];")
-    print(f"        b{b}_xp_img  = st5_img[{xp_idx}];")
-    print(f"        b{b}_xq_real = st5_real[{xq_idx}];")
-    print(f"        b{b}_xq_img  = st5_img[{xq_idx}];")
-    print(f"        b{b}_wreal   = w_real[{w_idx}];")
-    print(f"        b{b}_wimg    = w_img[{w_idx}];")
-    print("")
+print("Wrote fft_input_q15_hex.txt")
 
-print("    end")
-print("end")
+# ============================================================
+# 2) Q1.15 -> float，做 256 點 FFT，再 scale /256
+# ============================================================
+xr = xp_real_q15.astype(np.float64) / Q_SCALE
+xi = xp_img_q15.astype(np.float64)  / Q_SCALE
+x  = xr + 1j * xi
 
-print("always @(*) begin")
-print("    if (cnt > 257 && cnt < 262) begin")
+# numpy FFT：Y[k] = Σ x[n] * exp(-j*2πkn/N)
+Y = np.fft.fft(x)
 
-'''
-N = 256  # FFT points
+# 若硬體每 stage /2，8 stage 總共 /256，這裡就除以 N
+Y = Y / N
 
-for s in range(1, 9):   # stage 1..8
-    L = 2 ** s
-    step = N // L       # N/L
-    m_max = L // 2
+# ============================================================
+# 3) float FFT 結果 -> Q1.15，做飽和
+# ============================================================
+Y_real_q15 = np.empty(N, dtype=np.int16)
+Y_img_q15  = np.empty(N, dtype=np.int16)
 
-    ks = [m * step for m in range(m_max)]
+for k in range(N):
+    Y_real_q15[k] = float_to_q15(Y[k].real)
+    Y_img_q15[k]  = float_to_q15(Y[k].imag)
 
-    print(f"Stage {s}: L={L}, step={step}, num_twiddle={m_max}")
-    print("  w index =", ks)
-    print()
-'''
-st_idx_real = [
-    3, 7, 11, 15, 19, 23,
-    34, 39, 44, 49, 54, 59,
-    64, 69, 74, 79, 84, 89,
-    94, 99, 104, 109, 114, 119,
-    124, 129, 134, 139, 144, 149,
-    154, 159,
-]
+# ============================================================
+# 4) 輸出 golden FFT 結果為 16 進位 TXT
+#    每行 "REAL IMAG"，4 位 hex（two's complement）
+# ============================================================
+with open("fft_output_q15_hex.txt", "w") as f:
+    for r, im in zip(Y_real_q15, Y_img_q15):
+        f.write(f"{(int(r) & 0xFFFF):04X} {(int(im) & 0xFFFF):04X}\n")
 
-print("always @(posedge clk) begin")
-print("    if (cnt > 257 && cnt < 262) begin")
-
-for k, idx in enumerate(st_idx_real):
-    b = 32 + k   # b32 ~ b63
-    # 假設你是：偶數 index 進 yp，奇數 index 進 yq（可以依你自己的規則改）
-    suffix = "yp" if (k % 2 == 0) else "yq"
-
-    print(f"        st6_real[{idx}] <= b{b}_{suffix}real;")
-    print(f"        st6_img [{idx}] <= b{b}_{suffix}img;")
-
-print("        // 下面接 shift 的 for 迴圈")
-print("    end")
-print("end")
-
+print("Wrote fft_output_q15_hex.txt")

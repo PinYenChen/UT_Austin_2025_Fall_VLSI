@@ -24,41 +24,50 @@ input signed [15:0] out_yp_real, out_yp_img;
 //================================================================
 // clock
 //================================================================
-real CYCLE = `CYCLE_TIME;
-always #(CYCLE/2.0) clk = ~clk;
-
+integer CYCLE;
+initial begin 
+    CYCLE = `CYCLE_TIME;
+    clk = 0 ;
+end
+always #(`CYCLE_TIME/2.0) clk = ~clk;
 //================================================================
 // integer
 //================================================================
 integer pat_num, pat_tot;
 integer latency;
 integer total_latency = 0;
-integer i;
+integer i, f_in;
+integer a;
 
 reg[9:0] out_counter;
 reg signed [15:0] xp_real_reg[0:255], xp_img_reg[0:255];
 reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
 
+reg signed [15:0] in_real, in_img;
+
 initial begin
     // Initialize signals
     reset_task;
-    pat_tot = 10000;
+    pat_tot = 1;
     for (i = 0 ; i < 256; i = i+1) begin
         xp_real_reg[i] = 0;
         xp_img_reg[i] = 0;
     end
-    input_task;
+    
     for(pat_num = 0; pat_num < pat_tot; pat_num = pat_num + 1) begin
+        input_task;
         in_valid = 1;
         for (i = 0 ; i < 256 ; i = i + 1 ) begin
             in_xp_real = xp_real_reg[i];
             in_xp_img = xp_img_reg[i];
+            @(negedge clk);
         end
         @(negedge clk);
         in_valid = 0;
         in_xp_real = 'bx;
         in_xp_img = 'bx;
         latency = 0;
+
         wait_out_valid_task;
         cal_gold_task;
         check_ans_task;
@@ -73,34 +82,24 @@ task cal_gold_task;
     real    PI;
     real    scale;
 
-    // input real 形式
     real xr [0:255];
     real xi [0:255];
 
-    // DFT 暫存
     integer n, k;
     real    sumr, sumi;
     real    angle, c, s;
 
-    // Q1.15 轉換暫存
     integer tmp_r, tmp_i;
 
 begin
-    // ---------- 初始化常數 ----------
     N     = 256;
     PI    = 3.141592653589793;
-    // 如果硬體有做 8 層 /2 的 scaling → 等效 /256
     scale = 1.0 / 256.0;
-    // 若硬體沒做 scaling，這裡改成 1.0 即可：
-    // scale = 1.0;
 
-    // ================================================
-    // 1) 把 Q1.15 input 轉成 real (-1.0 ~ 1.0)
-    //    這裡用你的 in_xp_real / in_xp_img
-    // ================================================
+    // 1) Q1.15 array -> real
     for (n = 0; n < N; n = n + 1) begin
-        xr[n] = $itor(in_xp_real[n]) / 32768.0;  // 2^15
-        xi[n] = $itor(in_xp_img[n])  / 32768.0;
+        xr[n] = $itor(xp_real_reg[n]) / 32768.0;  
+        xi[n] = $itor(xp_img_reg[n])  / 32768.0;  
     end
 
     // ================================================
@@ -153,7 +152,7 @@ task check_ans_task; begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_yp_real, "     Golden answer = %4d", golden_out_yp_real[out_counter]);
+            $display("     Your answer = %4d", out_yp_real, "     Golden answer = %4h", golden_out_yp_real[out_counter]);
             $display("***************************************************************************");
             $finish;
         end
@@ -161,7 +160,7 @@ task check_ans_task; begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_yp_img, "     Golden answer = %4d", golden_out_yp_img[out_counter]);
+            $display("     Your answer = %4d", out_yp_img, "     Golden answer = %4h", golden_out_yp_img[out_counter]);
             $display("***************************************************************************");
             $finish;
         end
@@ -195,10 +194,25 @@ end
 endtask
 
 task input_task; begin
+    /*
     for (i = 0 ; i < 256 ; i = i + 1) begin
         xp_real_reg[i] = $urandom_range(-32768, 32767);
         xp_img_reg[i] = $urandom_range(-32768, 32767);
     end
+    */
+    f_in  = $fopen("fft_input_q15_hex.txt", "r");
+    if (f_in == 0) begin
+        $display("Failed to open input.txt");
+        $finish;
+    end
+    // Initialize signals
+
+    for(i = 0 ; i < 256 ; i = i + 1)begin
+        a = $fscanf(f_in, "%h %h", in_real, in_img);
+		xp_real_reg[i] = in_real;
+		xp_real_reg[i] = in_img;
+    end
+    
 end
 endtask
 
@@ -208,7 +222,7 @@ task reset_task;begin
 	in_xp_real = 16'bx;
     in_xp_img = 16'bx;
     total_latency = 0;
-    force clk = 0;
+
     // Apply reset
     #CYCLE; rst_n = 1'b0; 
     #CYCLE; rst_n = 1'b1;
@@ -222,7 +236,7 @@ task reset_task;begin
         $finish;
     end
     #CYCLE; 
-	release clk;
+
 	
 end
 endtask
@@ -239,7 +253,6 @@ task display_pass; begin
 	$display("              clock period = %4fns", CYCLE);
 	$display("**************************************************");
 end endtask
-
 FFT_256 fft_256(
     .clk(clk),
     .rst_n(rst_n),
