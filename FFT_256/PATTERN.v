@@ -431,7 +431,7 @@ task check_ans_task; begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_yp_real, "     Golden answer = %4h", golden_out_yp_real[out_counter]);
+            $display("     Your answer = %4h", out_yp_real, "     Golden answer = %4h", golden_out_yp_real[out_counter]);
             $display("***************************************************************************");
             $finish;
         end
@@ -439,7 +439,7 @@ task check_ans_task; begin
             $display("***************************************************************************");
             $display("                         Your answer is incorrect!                         ");
             $display("                         failed at cycle = %4d                         ", out_counter);
-            $display("     Your answer = %4d", out_yp_img, "     Golden answer = %4h", golden_out_yp_img[out_counter]);
+            $display("     Your answer = %4h", out_yp_img, "     Golden answer = %4h", golden_out_yp_img[out_counter]);
             $display("***************************************************************************");
             $finish;
         end

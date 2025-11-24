@@ -214,6 +214,7 @@ reg [8:0] cnt;
 reg [15:0] in_reg_real [0:128]; 
 reg [15:0] in_reg_img [0:128];
 
+reg [7:0] out_cnt;
 integer i;
 localparam 
   IDLE    ='d0,
@@ -222,14 +223,15 @@ localparam
 reg cur_state, nxt_state;
 always @(posedge clk) begin
     if (!rst_n) begin
-        cur_state = IDLE;
+        cur_state <= IDLE;
     end
     else cur_state <= nxt_state;
 end
 always @(*) begin
+    nxt_state = cur_state;
     case(cur_state) 
         IDLE: if (in_valid) nxt_state = CAL_IN;
-        CAL_IN: if (cnt == 255) nxt_state = IDLE;
+        CAL_IN: if (out_cnt == 255) nxt_state = IDLE;
     endcase
 end
 
@@ -255,7 +257,7 @@ always @(posedge clk) begin
         cnt <= 0;
     end
     else begin
-        if (in_valid || in_cnt != 0) begin
+        if (in_valid || cnt != 0) begin
             cnt <= cnt + 1;
         end
         else if (cur_state == IDLE) begin
@@ -265,10 +267,13 @@ always @(posedge clk) begin
 end
 
 
-
-
 always @(posedge clk) begin
-    if (in_valid) begin
+    if (!rst_n) begin
+        for (i = 0 ; i< 129 ; i = i + 1) begin
+            in_reg_real[i] <= 0;
+        end
+    end
+    else if (in_valid) begin
         in_reg_real [128] <= x_real;
         in_reg_img[128] <= x_img;
         for (i = 0 ; i < 128 ; i = i + 1) begin
@@ -285,13 +290,13 @@ always @(*) begin
         b1_xp_real = in_reg_real[0];
         b1_xp_img = in_reg_img[0];
         b1_xq_real = in_reg_real[128];
-        b1_xq_img = in_reg_real[128];
+        b1_xq_img = in_reg_img[128];
         b1_wreal = w_real[0];
         b1_wimg = w_img[0];
     end
 end
-reg [16:0] st1_real [0:129];
-reg [16:0] st1_img [0:129];
+reg [15:0] st1_real [0:129];
+reg [15:0] st1_img [0:129];
 always @(posedge clk) begin
     if (cnt > 128 && cnt < 257) begin // 6-133 can do butterfly 2 
         st1_real[64] <= b1_ypreal;
@@ -329,14 +334,15 @@ always @(*) begin
         b3_wimg = w_img[64];
     end
 end
-reg [16:0] st2_real [0:131];
-reg [16:0] st2_img [0:131];
+reg [15:0] st2_real [0:131];
+reg [15:0] st2_img [0:131];
 always @(posedge clk) begin
     if (cnt > 193 && cnt < 258) begin // 6-133 can do butterfly 2 
         st2_real[32] <= b2_ypreal;
         st2_img[32] <= b2_ypimg;
         st2_real[65] <= b2_yqreal;
         st2_img[65] <= b2_yqimg;
+
         st2_real[98] <= b3_ypreal;
         st2_img[98] <= b3_ypimg;
         st2_real[131] <= b3_yqreal;
@@ -397,26 +403,33 @@ always @(*) begin
         b7_wimg = w_img[96];
     end
 end
-reg [16:0] st3_real [0:135];
-reg [16:0] st3_img [0:135];
+reg [15:0] st3_real [0:135];
+reg [15:0] st3_img [0:135];
 always @(posedge clk) begin
     if (cnt > 226 && cnt < 259) begin // 6-133 can do butterfly 2 
-        st3_real[16] <= b2_ypreal;
-        st3_img[16] <= b2_ypimg;
-        st3_real[33] <= b2_yqreal;
-        st3_img[33] <= b2_yqimg;
-        st3_real[50] <= b3_ypreal;
-        st3_img[50] <= b3_ypimg;
-        st3_real[67] <= b3_yqreal;
-        st3_img[67] <= b3_yqimg;
-        st3_real[84] <= b2_ypreal;
-        st3_img[84] <= b2_ypimg;
-        st3_real[101] <= b2_yqreal;
-        st3_img[101] <= b2_yqimg;
-        st3_real[118] <= b3_ypreal;
-        st3_img[118] <= b3_ypimg;
-        st3_real[135] <= b3_yqreal;
-        st3_img[135] <= b3_yqimg;
+        st3_real[16] <= b4_ypreal;
+        st3_img[16] <= b4_ypimg;
+
+        st3_real[33] <= b4_yqreal;
+        st3_img[33] <= b4_yqimg;
+
+        st3_real[50] <= b5_ypreal;
+        st3_img[50] <= b5_ypimg;
+
+        st3_real[67] <= b5_yqreal;
+        st3_img[67] <= b5_yqimg;
+
+        st3_real[84] <= b6_ypreal;
+        st3_img[84] <= b6_ypimg;
+
+        st3_real[101] <= b6_yqreal;
+        st3_img[101] <= b6_yqimg;
+
+        st3_real[118] <= b7_ypreal;
+        st3_img[118] <= b7_ypimg;
+
+        st3_real[135] <= b7_yqreal;
+        st3_img[135] <= b7_yqimg;
         for (i = 0 ; i < 16 ; i = i + 1) begin
             st3_real[i] <= st3_real[i+1];
             st3_img[i] <= st3_img[i+1];
@@ -521,8 +534,8 @@ always @(*) begin
         b15_wimg = w_img[112];
     end
 end
-reg [16:0] st4_real [0:143];
-reg [16:0] st4_img [0:143];
+reg [15:0] st4_real [0:143];
+reg [15:0] st4_img [0:143];
 always @(posedge clk) begin
     if (cnt > 243 && cnt < 260) begin // 6-133 can do butterfly 2 
         st4_real[8] <= b8_ypreal;
@@ -562,8 +575,8 @@ always @(posedge clk) begin
         
         st4_real[134] <= b15_ypreal;
         st4_img[134] <= b15_ypimg;
-        st4_real[143] <= b16_yqreal;
-        st4_img[143] <= b16_yqimg;
+        st4_real[143] <= b15_yqreal;
+        st4_img[143] <= b15_yqimg;
         for (i = 0 ; i < 8 ; i = i + 1) begin
             st4_real[i] <= st4_real[i+1];
             st4_img[i] <= st4_img[i+1];
@@ -765,8 +778,8 @@ always @(*) begin
         b31_wimg = w_img[120];
     end
 end
-reg [16:0] st5_real [0:159];
-reg [16:0] st5_img [0:159];
+reg [15:0] st5_real [0:159];
+reg [15:0] st5_img [0:159];
 always @(posedge clk) begin
     if (cnt > 252 && cnt < 261) begin // 6-133 can do butterfly 2 
         st5_real[4] <= b16_ypreal;
@@ -910,8 +923,8 @@ always @(posedge clk) begin
     end
 end
 
-reg [16:0] st6_real [0:255];
-reg [16:0] st6_img [0:255];
+reg [15:0] st6_real [0:255];
+reg [15:0] st6_img [0:255];
 
 // ========================================
 // Stage 6
@@ -3375,11 +3388,7 @@ always @(posedge clk) begin
         st6_real[255] <= b63_yqreal;
         st6_img[255]  <= b63_yqimg;
 
-        //st6_real[i] <= st6_real[i+1];
-        //st6_img[i]  <= st6_img[i+1];
-        //st6_real[4 + i] <= st6_real[5 + i];
-        //st6_img[4 + i]  <= st6_img[5 + i];
-        for (integer i = 0; i < 2; i = i + 1) begin
+        for (integer i = 0; i < 3; i = i + 1) begin
             for (integer j = 0; j < 64; j = j + 1) begin
                 // base = 4*j -> 0,4,8,...,252
                 st6_real[4*j + i] <= st6_real[4*j + 1 + i];
@@ -4678,7 +4687,7 @@ always @(posedge clk) begin
         
     end
 end
-reg [7:0] out_cnt;
+
 always @(posedge clk) begin
     if (!rst_n) begin
         out_cnt <= 0;
@@ -4792,7 +4801,7 @@ butterfly B62 (.xp_real(b62_xp_real), .xp_img(b62_xp_img), .xq_real(b62_xq_real)
 butterfly B63 (.xp_real(b63_xp_real), .xp_img(b63_xp_img), .xq_real(b63_xq_real), .xq_img(b63_xq_img), .w_real(b63_wreal), .w_img(b63_wimg), .yp_real(b63_ypreal), .yp_img(b63_ypimg), .yq_real(b63_yqreal), .yq_img(b63_yqimg));
 
 
-assign w_real[0] = 16'h8000; // 1.0000
+assign w_real[0] = 16'h7fff; // 1.0000
 assign w_img[0] = 16'h0000; // -0.0000
 assign w_real[1] = 16'h7ff6; // 0.9997
 assign w_img[1] = 16'hfcdc; // -0.0245
