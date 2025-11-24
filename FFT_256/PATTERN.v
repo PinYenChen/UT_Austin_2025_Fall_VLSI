@@ -39,6 +39,15 @@ integer total_latency = 0;
 integer i, f_in, m;
 integer a;
 
+
+// 差值與絕對值（用整數）
+reg signed [16:0] diff_r_s, diff_i_s;  // 多 1 bit 防溢位
+integer           abs_diff_r, abs_diff_i;
+
+// 容許的誤差 (LSB)
+localparam integer TOL = 4;  // = 4 LSB ≈ 12e-5
+
+
 reg[9:0] out_counter;
 reg signed [15:0] xp_real_reg[0:255], xp_img_reg[0:255];
 reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
@@ -321,6 +330,7 @@ initial begin
     
     for(pat_num = 0; pat_num < pat_tot; pat_num = pat_num + 1) begin
         input_task;
+        @(negedge clk);
         in_valid = 1;
         for (i = 0 ; i < 256 ; i = i + 1 ) begin
             in_xp_real = xp_real_reg[i];
@@ -388,7 +398,7 @@ begin
 
             // (xr + j*xi) * (twr + j*twi)
             sumr = sumr + (xr[n]*twr - xi[n]*twi);
-            sumi = sumi + (xr[n]*twr + xi[n]*twi);
+            sumi = sumi + (xr[n]*twi + xi[n]*twr);
         end
 
         // 硬體總體 scaling /256
@@ -446,6 +456,8 @@ task check_ans_task; begin
     end
 end
 endtask
+
+
 
 task wait_out_valid_task; begin
     latency =0;
