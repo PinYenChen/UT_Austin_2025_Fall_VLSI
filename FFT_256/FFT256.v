@@ -205,17 +205,17 @@ wire signed [15:0] b62_ypreal, b62_ypimg, b62_yqreal, b62_yqimg;
 reg  signed [15:0] b63_xp_real, b63_xp_img, b63_xq_real, b63_xq_img, b63_wreal, b63_wimg;
 wire signed [15:0] b63_ypreal, b63_ypimg, b63_yqreal, b63_yqimg;
 
-wire [15:0] w_real[0:127];
-wire [15:0] w_img[0:127];
+wire signed [15:0] w_real[0:127];
+wire signed [15:0] w_img[0:127];
 
 
 reg [7:0] in_cnt;
 reg [8:0] cnt;
-reg [15:0] in_reg_real [0:128]; 
-reg [15:0] in_reg_img [0:128];
+reg signed [15:0] in_reg_real [0:128]; 
+reg signed [15:0] in_reg_img [0:128];
 
 reg [7:0] out_cnt;
-integer i;
+integer i,j;
 localparam 
   IDLE    ='d0,
   CAL_IN ='d1;
@@ -231,18 +231,10 @@ always @(*) begin
     nxt_state = cur_state;
     case(cur_state) 
         IDLE: if (in_valid) nxt_state = CAL_IN;
-        CAL_IN: if (out_cnt == 255) nxt_state = IDLE;
+        CAL_IN: if (out_cnt == 0 && cnt == 511) nxt_state = IDLE;
     endcase
 end
 
-always @(posedge clk) begin
-	if (!rst_n) begin
-		cur_state <= IDLE;
-	end
-	else begin
-		cur_state <= nxt_state;
-	end
-end
 
 always @(posedge clk) begin
     if (!rst_n) begin
@@ -257,8 +249,11 @@ always @(posedge clk) begin
         cnt <= 0;
     end
     else begin
-        if (in_valid || cnt != 0) begin
+        if ((in_valid || cnt != 0) && &cnt != 1) begin
             cnt <= cnt + 1;
+        end
+        else if (&cnt == 1) begin
+            cnt <= cnt;
         end
         else if (cur_state == IDLE) begin
             cnt <= 0;
@@ -269,13 +264,14 @@ end
 
 always @(posedge clk) begin
     if (!rst_n) begin
-        for (i = 0 ; i< 129 ; i = i + 1) begin
+        for (i = 0 ; i < 129 ; i = i + 1) begin
             in_reg_real[i] <= 0;
+            in_reg_img[i] <= 0;
         end
     end
     else if (in_valid) begin
         in_reg_real [128] <= x_real;
-        in_reg_img[128] <= x_img;
+        in_reg_img [128] <= x_img;
         for (i = 0 ; i < 128 ; i = i + 1) begin
             in_reg_real[i] <= in_reg_real[i+1];
             in_reg_img[i] <= in_reg_img[i+1];
@@ -295,20 +291,20 @@ always @(*) begin
         b1_wimg = w_img[0];
     end
 end
-reg [15:0] st1_real [0:129];
-reg [15:0] st1_img [0:129];
+reg signed [15:0] st1_real [0:129];
+reg signed [15:0] st1_img [0:129];
 always @(posedge clk) begin
+    for (i = 0 ; i < 64 ; i = i + 1) begin
+        st1_real[i] <= st1_real[i+1];
+        st1_img[i] <= st1_img[i+1];
+        st1_real[65 + i] <= st1_real[i+66];
+        st1_img[65 + i] <= st1_img[i+66];            
+    end
     if (cnt > 128 && cnt < 257) begin // 6-133 can do butterfly 2 
         st1_real[64] <= b1_ypreal;
         st1_img[64] <= b1_ypimg;
         st1_real[129] <= b1_yqreal;
         st1_img[129] <= b1_yqimg;
-        for (i = 0 ; i < 64 ; i = i + 1) begin
-            st1_real[i] <= st1_real[i+1];
-            st1_img[i] <= st1_img[i+1];
-            st1_real[65 + i] <= st1_real[i+66];
-            st1_img[65 + i] <= st1_img[i+66];            
-        end
     end
 end 
 // ========================================
@@ -334,8 +330,8 @@ always @(*) begin
         b3_wimg = w_img[64];
     end
 end
-reg [15:0] st2_real [0:131];
-reg [15:0] st2_img [0:131];
+reg signed [15:0] st2_real [0:131];
+reg signed [15:0] st2_img [0:131];
 always @(posedge clk) begin
     if (cnt > 193 && cnt < 258) begin // 6-133 can do butterfly 2 
         st2_real[32] <= b2_ypreal;
@@ -347,7 +343,7 @@ always @(posedge clk) begin
         st2_img[98] <= b3_ypimg;
         st2_real[131] <= b3_yqreal;
         st2_img[131] <= b3_yqimg;
-        for (integer i = 0 ; i < 32 ; i = i + 1) begin
+        for (i = 0 ; i < 32 ; i = i + 1) begin
             st2_real[i] <= st2_real[i+1];
             st2_img[i] <= st2_img[i+1];
             st2_real[33 + i] <= st2_real[i+34];
@@ -403,8 +399,8 @@ always @(*) begin
         b7_wimg = w_img[96];
     end
 end
-reg [15:0] st3_real [0:135];
-reg [15:0] st3_img [0:135];
+reg signed [15:0] st3_real [0:135];
+reg signed [15:0] st3_img [0:135];
 always @(posedge clk) begin
     if (cnt > 226 && cnt < 259) begin // 6-133 can do butterfly 2 
         st3_real[16] <= b4_ypreal;
@@ -534,8 +530,8 @@ always @(*) begin
         b15_wimg = w_img[112];
     end
 end
-reg [15:0] st4_real [0:143];
-reg [15:0] st4_img [0:143];
+reg signed [15:0] st4_real [0:143];
+reg signed [15:0] st4_img [0:143];
 always @(posedge clk) begin
     if (cnt > 243 && cnt < 260) begin // 6-133 can do butterfly 2 
         st4_real[8] <= b8_ypreal;
@@ -722,8 +718,8 @@ always @(*) begin
     if (cnt > 252 && cnt < 261) begin
         b26_xp_real = st4_real[90];
         b26_xp_img = st4_img[90];
-        b26_xq_real = st4_real[88];
-        b26_xq_img = st4_img[88];
+        b26_xq_real = st4_real[98];
+        b26_xq_img = st4_img[98];
         b26_wreal = w_real[40];
         b26_wimg = w_img[40];
     end
@@ -778,8 +774,8 @@ always @(*) begin
         b31_wimg = w_img[120];
     end
 end
-reg [15:0] st5_real [0:159];
-reg [15:0] st5_img [0:159];
+reg signed [15:0] st5_real [0:159];
+reg signed [15:0] st5_img [0:159];
 always @(posedge clk) begin
     if (cnt > 252 && cnt < 261) begin // 6-133 can do butterfly 2 
         st5_real[4] <= b16_ypreal;
@@ -854,7 +850,7 @@ always @(posedge clk) begin
         st5_img[154] <= b31_ypimg;
         st5_real[159] <= b31_yqreal;
         st5_img[159] <= b31_yqimg;
-        for (integer i = 0 ; i < 4 ; i = i + 1) begin
+        for (i = 0 ; i < 4 ; i = i + 1) begin
             st5_real[i] <= st5_real[i+1];
             st5_img[i]  <= st5_img[i+1];
             st5_real[5 + i] <= st5_real[6 + i];
@@ -923,8 +919,9 @@ always @(posedge clk) begin
     end
 end
 
-reg [15:0] st6_real [0:255];
-reg [15:0] st6_img [0:255];
+reg signed [15:0] st6_real [0:255];
+reg signed [15:0] st6_img [0:255];
+
 
 // ========================================
 // Stage 6
@@ -1751,8 +1748,8 @@ always @(*) begin
         b41_xp_img  = st6_img[164];
         b41_xq_real = st6_real[166];
         b41_xq_img  = st6_img[166];
-        b41_wreal   = w_real[114];
-        b41_wimg    = w_img[114];
+        b41_wreal   = w_real[74];
+        b41_wimg    = w_img[74];
 
         // k = 10, b42
         b42_xp_real = st6_real[168];
@@ -2008,8 +2005,8 @@ always @(*) begin
         b41_xp_img  = st6_img[165];
         b41_xq_real = st6_real[167];
         b41_xq_img  = st6_img[167];
-        b41_wreal   = w_real[114];
-        b41_wimg    = w_img[114];
+        b41_wreal   = w_real[74];
+        b41_wimg    = w_img[74];
 
         // k = 10, b42
         b42_xp_real = st6_real[169];
@@ -2702,8 +2699,8 @@ always @(*) begin
         b63_xp_img  = st6_img[126];
         b63_xq_real = st6_real[127];
         b63_xq_img  = st6_img[127];
-        b63_wreal   = w_real[62];
-        b63_wimg    = w_img[62];
+        b63_wreal   = w_real[126];
+        b63_wimg    = w_img[126];
         
     end
     else if (cnt == 268) begin
@@ -3202,8 +3199,8 @@ always @(*) begin
         b61_xp_img  = st6_img[250];
         b61_xq_real = st6_real[251];
         b61_xq_img  = st6_img[251];
-        b61_wreal   = w_real[63];
-        b61_wimg    = w_img[63];
+        b61_wreal   = w_real[95];
+        b61_wimg    = w_img[95];
 
         // k = 30, b62
         b62_xp_real = st6_real[252];
@@ -3221,7 +3218,262 @@ always @(*) begin
         b63_wreal   = w_real[127];
         b63_wimg    = w_img[127];        
     end
+    else begin
+        b32_xp_real = st6_real[128];
+        b32_xp_img  = st6_img[128];
+        b32_xq_real = st6_real[130];
+        b32_xq_img  = st6_img[130];
+        b32_wreal   = w_real[2];
+        b32_wimg    = w_img[2];
 
+        // k = 1, b33
+        b33_xp_real = st6_real[132];
+        b33_xp_img  = st6_img[132];
+        b33_xq_real = st6_real[134];
+        b33_xq_img  = st6_img[134];
+        b33_wreal   = w_real[66];
+        b33_wimg    = w_img[66];
+
+        // k = 2, b34
+        b34_xp_real = st6_real[136];
+        b34_xp_img  = st6_img[136];
+        b34_xq_real = st6_real[138];
+        b34_xq_img  = st6_img[138];
+        b34_wreal   = w_real[34];
+        b34_wimg    = w_img[34];
+
+        // k = 3, b35
+        b35_xp_real = st6_real[140];
+        b35_xp_img  = st6_img[140];
+        b35_xq_real = st6_real[142];
+        b35_xq_img  = st6_img[142];
+        b35_wreal   = w_real[98];
+        b35_wimg    = w_img[98];
+
+        // k = 4, b36
+        b36_xp_real = st6_real[144];
+        b36_xp_img  = st6_img[144];
+        b36_xq_real = st6_real[146];
+        b36_xq_img  = st6_img[146];
+        b36_wreal   = w_real[18];
+        b36_wimg    = w_img[18];
+
+        // k = 5, b37
+        b37_xp_real = st6_real[148];
+        b37_xp_img  = st6_img[148];
+        b37_xq_real = st6_real[150];
+        b37_xq_img  = st6_img[150];
+        b37_wreal   = w_real[82];
+        b37_wimg    = w_img[82];
+
+        // k = 6, b38
+        b38_xp_real = st6_real[152];
+        b38_xp_img  = st6_img[152];
+        b38_xq_real = st6_real[154];
+        b38_xq_img  = st6_img[154];
+        b38_wreal   = w_real[50];
+        b38_wimg    = w_img[50];
+
+        // k = 7, b39
+        b39_xp_real = st6_real[156];
+        b39_xp_img  = st6_img[156];
+        b39_xq_real = st6_real[158];
+        b39_xq_img  = st6_img[158];
+        b39_wreal   = w_real[114];
+        b39_wimg    = w_img[114];
+
+        // k = 8, b40
+        b40_xp_real = st6_real[160];
+        b40_xp_img  = st6_img[160];
+        b40_xq_real = st6_real[162];
+        b40_xq_img  = st6_img[162];
+        b40_wreal   = w_real[10];
+        b40_wimg    = w_img[10];
+
+        // k = 9, b41
+        b41_xp_real = st6_real[164];
+        b41_xp_img  = st6_img[164];
+        b41_xq_real = st6_real[166];
+        b41_xq_img  = st6_img[166];
+        b41_wreal   = w_real[114];
+        b41_wimg    = w_img[114];
+
+        // k = 10, b42
+        b42_xp_real = st6_real[168];
+        b42_xp_img  = st6_img[168];
+        b42_xq_real = st6_real[170];
+        b42_xq_img  = st6_img[170];
+        b42_wreal   = w_real[42];
+        b42_wimg    = w_img[42];
+
+        // k = 11, b43
+        b43_xp_real = st6_real[172];
+        b43_xp_img  = st6_img[172];
+        b43_xq_real = st6_real[174];
+        b43_xq_img  = st6_img[174];
+        b43_wreal   = w_real[106];
+        b43_wimg    = w_img[106];
+
+        // k = 12, b44
+        b44_xp_real = st6_real[176];
+        b44_xp_img  = st6_img[176];
+        b44_xq_real = st6_real[178];
+        b44_xq_img  = st6_img[178];
+        b44_wreal   = w_real[26];
+        b44_wimg    = w_img[26];
+
+        // k = 13, b45
+        b45_xp_real = st6_real[180];
+        b45_xp_img  = st6_img[180];
+        b45_xq_real = st6_real[182];
+        b45_xq_img  = st6_img[182];
+        b45_wreal   = w_real[90];
+        b45_wimg    = w_img[90];
+
+        // k = 14, b46
+        b46_xp_real = st6_real[184];
+        b46_xp_img  = st6_img[184];
+        b46_xq_real = st6_real[186];
+        b46_xq_img  = st6_img[186];
+        b46_wreal   = w_real[58];
+        b46_wimg    = w_img[58];
+
+        // k = 15, b47
+        b47_xp_real = st6_real[188];
+        b47_xp_img  = st6_img[188];
+        b47_xq_real = st6_real[190];
+        b47_xq_img  = st6_img[190];
+        b47_wreal   = w_real[122];
+        b47_wimg    = w_img[122];
+
+        // k = 16, b48
+        b48_xp_real = st6_real[192];
+        b48_xp_img  = st6_img[192];
+        b48_xq_real = st6_real[194];
+        b48_xq_img  = st6_img[194];
+        b48_wreal   = w_real[6];
+        b48_wimg    = w_img[6];
+
+        // k = 17, b49
+        b49_xp_real = st6_real[196];
+        b49_xp_img  = st6_img[196];
+        b49_xq_real = st6_real[198];
+        b49_xq_img  = st6_img[198];
+        b49_wreal   = w_real[70];
+        b49_wimg    = w_img[70];
+
+        // k = 18, b50
+        b50_xp_real = st6_real[200];
+        b50_xp_img  = st6_img[200];
+        b50_xq_real = st6_real[202];
+        b50_xq_img  = st6_img[202];
+        b50_wreal   = w_real[38];
+        b50_wimg    = w_img[38];
+
+        // k = 19, b51
+        b51_xp_real = st6_real[204];
+        b51_xp_img  = st6_img[204];
+        b51_xq_real = st6_real[206];
+        b51_xq_img  = st6_img[206];
+        b51_wreal   = w_real[102];
+        b51_wimg    = w_img[102];
+
+        // k = 20, b52
+        b52_xp_real = st6_real[208];
+        b52_xp_img  = st6_img[208];
+        b52_xq_real = st6_real[210];
+        b52_xq_img  = st6_img[210];
+        b52_wreal   = w_real[22];
+        b52_wimg    = w_img[22];
+
+        // k = 21, b53
+        b53_xp_real = st6_real[212];
+        b53_xp_img  = st6_img[212];
+        b53_xq_real = st6_real[214];
+        b53_xq_img  = st6_img[214];
+        b53_wreal   = w_real[86];
+        b53_wimg    = w_img[86];
+
+        // k = 22, b54
+        b54_xp_real = st6_real[216];
+        b54_xp_img  = st6_img[216];
+        b54_xq_real = st6_real[218];
+        b54_xq_img  = st6_img[218];
+        b54_wreal   = w_real[54];
+        b54_wimg    = w_img[54];
+
+        // k = 23, b55
+        b55_xp_real = st6_real[220];
+        b55_xp_img  = st6_img[220];
+        b55_xq_real = st6_real[222];
+        b55_xq_img  = st6_img[222];
+        b55_wreal   = w_real[118];
+        b55_wimg    = w_img[118];
+
+        // k = 24, b56
+        b56_xp_real = st6_real[224];
+        b56_xp_img  = st6_img[224];
+        b56_xq_real = st6_real[226];
+        b56_xq_img  = st6_img[226];
+        b56_wreal   = w_real[14];
+        b56_wimg    = w_img[14];
+
+        // k = 25, b57
+        b57_xp_real = st6_real[228];
+        b57_xp_img  = st6_img[228];
+        b57_xq_real = st6_real[230];
+        b57_xq_img  = st6_img[230];
+        b57_wreal   = w_real[78];
+        b57_wimg    = w_img[78];
+
+        // k = 26, b58
+        b58_xp_real = st6_real[232];
+        b58_xp_img  = st6_img[232];
+        b58_xq_real = st6_real[234];
+        b58_xq_img  = st6_img[234];
+        b58_wreal   = w_real[46];
+        b58_wimg    = w_img[46];
+
+        // k = 27, b59
+        b59_xp_real = st6_real[236];
+        b59_xp_img  = st6_img[236];
+        b59_xq_real = st6_real[238];
+        b59_xq_img  = st6_img[238];
+        b59_wreal   = w_real[110];
+        b59_wimg    = w_img[110];
+
+        // k = 28, b60
+        b60_xp_real = st6_real[240];
+        b60_xp_img  = st6_img[240];
+        b60_xq_real = st6_real[242];
+        b60_xq_img  = st6_img[242];
+        b60_wreal   = w_real[30];
+        b60_wimg    = w_img[30];
+
+        // k = 29, b61
+        b61_xp_real = st6_real[244];
+        b61_xp_img  = st6_img[244];
+        b61_xq_real = st6_real[246];
+        b61_xq_img  = st6_img[246];
+        b61_wreal   = w_real[94];
+        b61_wimg    = w_img[94];
+
+        // k = 30, b62
+        b62_xp_real = st6_real[248];
+        b62_xp_img  = st6_img[248];
+        b62_xq_real = st6_real[250];
+        b62_xq_img  = st6_img[250];
+        b62_wreal   = w_real[62];
+        b62_wimg    = w_img[62];
+
+        // k = 31, b63
+        b63_xp_real = st6_real[252];
+        b63_xp_img  = st6_img[252];
+        b63_xq_real = st6_real[254];
+        b63_xq_img  = st6_img[254];
+        b63_wreal   = w_real[126];
+        b63_wimg    = w_img[126];          
+    end
 
 end
 
@@ -3388,8 +3640,8 @@ always @(posedge clk) begin
         st6_real[255] <= b63_yqreal;
         st6_img[255]  <= b63_yqimg;
 
-        for (integer i = 0; i < 3; i = i + 1) begin
-            for (integer j = 0; j < 64; j = j + 1) begin
+        for (i = 0; i < 3; i = i + 1) begin
+            for (j = 0; j < 64; j = j + 1) begin
                 // base = 4*j -> 0,4,8,...,252
                 st6_real[4*j + i] <= st6_real[4*j + 1 + i];
                 st6_img [4*j + i] <= st6_img [4*j + 1 + i];
@@ -4040,652 +4292,779 @@ always @(posedge clk) begin
         st6_img[255]  <= b63_yqimg;
     end
     else if (cnt == 266) begin
+        // b32
         st6_real[0] <= b32_ypreal;
         st6_img[0]  <= b32_ypimg;
-        st6_real[128] <= b32_yqreal;
-        st6_img[128]  <= b32_yqimg;
+        st6_real[1] <= b32_yqreal;
+        st6_img[1]  <= b32_yqimg;
 
-        st6_real[64] <= b33_ypreal;
-        st6_img[64]  <= b33_ypimg;
-        st6_real[192] <= b33_yqreal;
-        st6_img[192]  <= b33_yqimg;
+        // b33
+        st6_real[2] <= b33_ypreal;
+        st6_img[2]  <= b33_ypimg;
+        st6_real[3] <= b33_yqreal;
+        st6_img[3]  <= b33_yqimg;
 
-        st6_real[32] <= b34_ypreal;
-        st6_img[32]  <= b34_ypimg;
-        st6_real[160] <= b34_yqreal;
-        st6_img[160]  <= b34_yqimg;
+        // b34
+        st6_real[4] <= b34_ypreal;
+        st6_img[4]  <= b34_ypimg;
+        st6_real[5] <= b34_yqreal;
+        st6_img[5]  <= b34_yqimg;
 
-        st6_real[96] <= b35_ypreal;
-        st6_img[96]  <= b35_ypimg;
-        st6_real[224] <= b35_yqreal;
-        st6_img[224]  <= b35_yqimg;
+        // b35
+        st6_real[6] <= b35_ypreal;
+        st6_img[6]  <= b35_ypimg;
+        st6_real[7] <= b35_yqreal;
+        st6_img[7]  <= b35_yqimg;
 
-        st6_real[16] <= b36_ypreal;
-        st6_img[16]  <= b36_ypimg;
-        st6_real[144] <= b36_yqreal;
-        st6_img[144]  <= b36_yqimg;
+        // b36
+        st6_real[8] <= b36_ypreal;
+        st6_img[8]  <= b36_ypimg;
+        st6_real[9] <= b36_yqreal;
+        st6_img[9]  <= b36_yqimg;
 
-        st6_real[80] <= b37_ypreal;
-        st6_img[80]  <= b37_ypimg;
-        st6_real[208] <= b37_yqreal;
-        st6_img[208]  <= b37_yqimg;
+        // b37
+        st6_real[10] <= b37_ypreal;
+        st6_img[10]  <= b37_ypimg;
+        st6_real[11] <= b37_yqreal;
+        st6_img[11]  <= b37_yqimg;
 
-        st6_real[48] <= b38_ypreal;
-        st6_img[48]  <= b38_ypimg;
-        st6_real[176] <= b38_yqreal;
-        st6_img[176]  <= b38_yqimg;
+        // b38
+        st6_real[12] <= b38_ypreal;
+        st6_img[12]  <= b38_ypimg;
+        st6_real[13] <= b38_yqreal;
+        st6_img[13]  <= b38_yqimg;
 
-        st6_real[112] <= b39_ypreal;
-        st6_img[112]  <= b39_ypimg;
-        st6_real[240] <= b39_yqreal;
-        st6_img[240]  <= b39_yqimg;
+        // b39
+        st6_real[14] <= b39_ypreal;
+        st6_img[14]  <= b39_ypimg;
+        st6_real[15] <= b39_yqreal;
+        st6_img[15]  <= b39_yqimg;
 
-        st6_real[8] <= b40_ypreal;
-        st6_img[8]  <= b40_ypimg;
-        st6_real[136] <= b40_yqreal;
-        st6_img[136]  <= b40_yqimg;
+        // b40
+        st6_real[16] <= b40_ypreal;
+        st6_img[16]  <= b40_ypimg;
+        st6_real[17] <= b40_yqreal;
+        st6_img[17]  <= b40_yqimg;
 
-        st6_real[72] <= b41_ypreal;
-        st6_img[72]  <= b41_ypimg;
-        st6_real[200] <= b41_yqreal;
-        st6_img[200]  <= b41_yqimg;
+        // b41
+        st6_real[18] <= b41_ypreal;
+        st6_img[18]  <= b41_ypimg;
+        st6_real[19] <= b41_yqreal;
+        st6_img[19]  <= b41_yqimg;
 
-        st6_real[40] <= b42_ypreal;
-        st6_img[40]  <= b42_ypimg;
-        st6_real[168] <= b42_yqreal;
-        st6_img[168]  <= b42_yqimg;
+        // b42
+        st6_real[20] <= b42_ypreal;
+        st6_img[20]  <= b42_ypimg;
+        st6_real[21] <= b42_yqreal;
+        st6_img[21]  <= b42_yqimg;
 
-        st6_real[104] <= b43_ypreal;
-        st6_img[104]  <= b43_ypimg;
-        st6_real[232] <= b43_yqreal;
-        st6_img[232]  <= b43_yqimg;
+        // b43
+        st6_real[22] <= b43_ypreal;
+        st6_img[22]  <= b43_ypimg;
+        st6_real[23] <= b43_yqreal;
+        st6_img[23]  <= b43_yqimg;
 
+        // b44
         st6_real[24] <= b44_ypreal;
         st6_img[24]  <= b44_ypimg;
-        st6_real[152] <= b44_yqreal;
-        st6_img[152]  <= b44_yqimg;
+        st6_real[25] <= b44_yqreal;
+        st6_img[25]  <= b44_yqimg;
 
-        st6_real[88] <= b45_ypreal;
-        st6_img[88]  <= b45_ypimg;
-        st6_real[216] <= b45_yqreal;
-        st6_img[216]  <= b45_yqimg;
+        // b45
+        st6_real[26] <= b45_ypreal;
+        st6_img[26]  <= b45_ypimg;
+        st6_real[27] <= b45_yqreal;
+        st6_img[27]  <= b45_yqimg;
 
-        st6_real[56] <= b46_ypreal;
-        st6_img[56]  <= b46_ypimg;
-        st6_real[184] <= b46_yqreal;
-        st6_img[184]  <= b46_yqimg;
+        // b46
+        st6_real[28] <= b46_ypreal;
+        st6_img[28]  <= b46_ypimg;
+        st6_real[29] <= b46_yqreal;
+        st6_img[29]  <= b46_yqimg;
 
-        st6_real[120] <= b47_ypreal;
-        st6_img[120]  <= b47_ypimg;
-        st6_real[248] <= b47_yqreal;
-        st6_img[248]  <= b47_yqimg;
+        // b47
+        st6_real[30] <= b47_ypreal;
+        st6_img[30]  <= b47_ypimg;
+        st6_real[31] <= b47_yqreal;
+        st6_img[31]  <= b47_yqimg;
 
-        st6_real[4] <= b48_ypreal;
-        st6_img[4]  <= b48_ypimg;
-        st6_real[132] <= b48_yqreal;
-        st6_img[132]  <= b48_yqimg;
+        // b48
+        st6_real[32] <= b48_ypreal;
+        st6_img[32]  <= b48_ypimg;
+        st6_real[33] <= b48_yqreal;
+        st6_img[33]  <= b48_yqimg;
 
-        st6_real[68] <= b49_ypreal;
-        st6_img[68]  <= b49_ypimg;
-        st6_real[196] <= b49_yqreal;
-        st6_img[196]  <= b49_yqimg;
+        // b49
+        st6_real[34] <= b49_ypreal;
+        st6_img[34]  <= b49_ypimg;
+        st6_real[35] <= b49_yqreal;
+        st6_img[35]  <= b49_yqimg;
 
+        // b50
         st6_real[36] <= b50_ypreal;
         st6_img[36]  <= b50_ypimg;
-        st6_real[164] <= b50_yqreal;
-        st6_img[164]  <= b50_yqimg;
+        st6_real[37] <= b50_yqreal;
+        st6_img[37]  <= b50_yqimg;
 
-        st6_real[100] <= b51_ypreal;
-        st6_img[100]  <= b51_ypimg;
-        st6_real[228] <= b51_yqreal;
-        st6_img[228]  <= b51_yqimg;
+        // b51
+        st6_real[38] <= b51_ypreal;
+        st6_img[38]  <= b51_ypimg;
+        st6_real[39] <= b51_yqreal;
+        st6_img[39]  <= b51_yqimg;
 
-        st6_real[20] <= b52_ypreal;
-        st6_img[20]  <= b52_ypimg;
-        st6_real[148] <= b52_yqreal;
-        st6_img[148]  <= b52_yqimg;
+        // b52
+        st6_real[40] <= b52_ypreal;
+        st6_img[40]  <= b52_ypimg;
+        st6_real[41] <= b52_yqreal;
+        st6_img[41]  <= b52_yqimg;
 
-        st6_real[84] <= b53_ypreal;
-        st6_img[84]  <= b53_ypimg;
-        st6_real[212] <= b53_yqreal;
-        st6_img[212]  <= b53_yqimg;
+        // b53
+        st6_real[42] <= b53_ypreal;
+        st6_img[42]  <= b53_ypimg;
+        st6_real[43] <= b53_yqreal;
+        st6_img[43]  <= b53_yqimg;
 
-        st6_real[52] <= b54_ypreal;
-        st6_img[52]  <= b54_ypimg;
-        st6_real[180] <= b54_yqreal;
-        st6_img[180]  <= b54_yqimg;
+        // b54
+        st6_real[44] <= b54_ypreal;
+        st6_img[44]  <= b54_ypimg;
+        st6_real[45] <= b54_yqreal;
+        st6_img[45]  <= b54_yqimg;
 
-        st6_real[116] <= b55_ypreal;
-        st6_img[116]  <= b55_ypimg;
-        st6_real[244] <= b55_yqreal;
-        st6_img[244]  <= b55_yqimg;
+        // b55
+        st6_real[46] <= b55_ypreal;
+        st6_img[46]  <= b55_ypimg;
+        st6_real[47] <= b55_yqreal;
+        st6_img[47]  <= b55_yqimg;
 
-        st6_real[12] <= b56_ypreal;
-        st6_img[12]  <= b56_ypimg;
-        st6_real[140] <= b56_yqreal;
-        st6_img[140]  <= b56_yqimg;
+        // b56
+        st6_real[48] <= b56_ypreal;
+        st6_img[48]  <= b56_ypimg;
+        st6_real[49] <= b56_yqreal;
+        st6_img[49]  <= b56_yqimg;
 
-        st6_real[76] <= b57_ypreal;
-        st6_img[76]  <= b57_ypimg;
-        st6_real[204] <= b57_yqreal;
-        st6_img[204]  <= b57_yqimg;
+        // b57
+        st6_real[50] <= b57_ypreal;
+        st6_img[50]  <= b57_ypimg;
+        st6_real[51] <= b57_yqreal;
+        st6_img[51]  <= b57_yqimg;
 
-        st6_real[44] <= b58_ypreal;
-        st6_img[44]  <= b58_ypimg;
-        st6_real[172] <= b58_yqreal;
-        st6_img[172]  <= b58_yqimg;
+        // b58
+        st6_real[52] <= b58_ypreal;
+        st6_img[52]  <= b58_ypimg;
+        st6_real[53] <= b58_yqreal;
+        st6_img[53]  <= b58_yqimg;
 
-        st6_real[108] <= b59_ypreal;
-        st6_img[108]  <= b59_ypimg;
-        st6_real[236] <= b59_yqreal;
-        st6_img[236]  <= b59_yqimg;
+        // b59
+        st6_real[54] <= b59_ypreal;
+        st6_img[54]  <= b59_ypimg;
+        st6_real[55] <= b59_yqreal;
+        st6_img[55]  <= b59_yqimg;
 
-        st6_real[28] <= b60_ypreal;
-        st6_img[28]  <= b60_ypimg;
-        st6_real[156] <= b60_yqreal;
-        st6_img[156]  <= b60_yqimg;
+        // b60
+        st6_real[56] <= b60_ypreal;
+        st6_img[56]  <= b60_ypimg;
+        st6_real[57] <= b60_yqreal;
+        st6_img[57]  <= b60_yqimg;
 
-        st6_real[92] <= b61_ypreal;
-        st6_img[92]  <= b61_ypimg;
-        st6_real[220] <= b61_yqreal;
-        st6_img[220]  <= b61_yqimg;
+        // b61
+        st6_real[58] <= b61_ypreal;
+        st6_img[58]  <= b61_ypimg;
+        st6_real[59] <= b61_yqreal;
+        st6_img[59]  <= b61_yqimg;
 
+        // b62
         st6_real[60] <= b62_ypreal;
         st6_img[60]  <= b62_ypimg;
-        st6_real[188] <= b62_yqreal;
-        st6_img[188]  <= b62_yqimg;
+        st6_real[61] <= b62_yqreal;
+        st6_img[61]  <= b62_yqimg;
 
-        st6_real[124] <= b63_ypreal;
-        st6_img[124]  <= b63_ypimg;
-        st6_real[252] <= b63_yqreal;
-        st6_img[252]  <= b63_yqimg;
+        // b63
+        st6_real[62] <= b63_ypreal;
+        st6_img[62]  <= b63_ypimg;
+        st6_real[63] <= b63_yqreal;
+        st6_img[63]  <= b63_yqimg;
         
     end
     else if (cnt == 267) begin
-        st6_real[2]   <= b32_ypreal;
-        st6_img[2]    <= b32_ypimg;
-        st6_real[130] <= b32_yqreal;
-        st6_img[130]  <= b32_yqimg;
+        // b32
+        st6_real[64] <= b32_ypreal;
+        st6_img[64]  <= b32_ypimg;
+        st6_real[65] <= b32_yqreal;
+        st6_img[65]  <= b32_yqimg;
 
-        st6_real[66]  <= b33_ypreal;
-        st6_img[66]   <= b33_ypimg;
-        st6_real[194] <= b33_yqreal;
-        st6_img[194]  <= b33_yqimg;
+        // b33
+        st6_real[66] <= b33_ypreal;
+        st6_img[66]  <= b33_ypimg;
+        st6_real[67] <= b33_yqreal;
+        st6_img[67]  <= b33_yqimg;
 
-        st6_real[34]  <= b34_ypreal;
-        st6_img[34]   <= b34_ypimg;
-        st6_real[162] <= b34_yqreal;
-        st6_img[162]  <= b34_yqimg;
+        // b34
+        st6_real[68] <= b34_ypreal;
+        st6_img[68]  <= b34_ypimg;
+        st6_real[69] <= b34_yqreal;
+        st6_img[69]  <= b34_yqimg;
 
-        st6_real[98]  <= b35_ypreal;
-        st6_img[98]   <= b35_ypimg;
-        st6_real[226] <= b35_yqreal;
-        st6_img[226]  <= b35_yqimg;
+        // b35
+        st6_real[70] <= b35_ypreal;
+        st6_img[70]  <= b35_ypimg;
+        st6_real[71] <= b35_yqreal;
+        st6_img[71]  <= b35_yqimg;
 
-        st6_real[18]  <= b36_ypreal;
-        st6_img[18]   <= b36_ypimg;
-        st6_real[146] <= b36_yqreal;
-        st6_img[146]  <= b36_yqimg;
+        // b36
+        st6_real[72] <= b36_ypreal;
+        st6_img[72]  <= b36_ypimg;
+        st6_real[73] <= b36_yqreal;
+        st6_img[73]  <= b36_yqimg;
 
-        st6_real[82]  <= b37_ypreal;
-        st6_img[82]   <= b37_ypimg;
-        st6_real[210] <= b37_yqreal;
-        st6_img[210]  <= b37_yqimg;
+        // b37
+        st6_real[74] <= b37_ypreal;
+        st6_img[74]  <= b37_ypimg;
+        st6_real[75] <= b37_yqreal;
+        st6_img[75]  <= b37_yqimg;
 
-        st6_real[50]  <= b38_ypreal;
-        st6_img[50]   <= b38_ypimg;
-        st6_real[178] <= b38_yqreal;
-        st6_img[178]  <= b38_yqimg;
+        // b38
+        st6_real[76] <= b38_ypreal;
+        st6_img[76]  <= b38_ypimg;
+        st6_real[77] <= b38_yqreal;
+        st6_img[77]  <= b38_yqimg;
 
-        st6_real[114] <= b39_ypreal;
-        st6_img[114]  <= b39_ypimg;
-        st6_real[242] <= b39_yqreal;
-        st6_img[242]  <= b39_yqimg;
+        // b39
+        st6_real[78] <= b39_ypreal;
+        st6_img[78]  <= b39_ypimg;
+        st6_real[79] <= b39_yqreal;
+        st6_img[79]  <= b39_yqimg;
 
-        st6_real[10]  <= b40_ypreal;
-        st6_img[10]   <= b40_ypimg;
-        st6_real[138] <= b40_yqreal;
-        st6_img[138]  <= b40_yqimg;
+        // b40
+        st6_real[80] <= b40_ypreal;
+        st6_img[80]  <= b40_ypimg;
+        st6_real[81] <= b40_yqreal;
+        st6_img[81]  <= b40_yqimg;
 
-        st6_real[74]  <= b41_ypreal;
-        st6_img[74]   <= b41_ypimg;
-        st6_real[202] <= b41_yqreal;
-        st6_img[202]  <= b41_yqimg;
+        // b41
+        st6_real[82] <= b41_ypreal;
+        st6_img[82]  <= b41_ypimg;
+        st6_real[83] <= b41_yqreal;
+        st6_img[83]  <= b41_yqimg;
 
-        st6_real[42]  <= b42_ypreal;
-        st6_img[42]   <= b42_ypimg;
-        st6_real[170] <= b42_yqreal;
-        st6_img[170]  <= b42_yqimg;
+        // b42
+        st6_real[84] <= b42_ypreal;
+        st6_img[84]  <= b42_ypimg;
+        st6_real[85] <= b42_yqreal;
+        st6_img[85]  <= b42_yqimg;
 
-        st6_real[106] <= b43_ypreal;
-        st6_img[106]  <= b43_ypimg;
-        st6_real[234] <= b43_yqreal;
-        st6_img[234]  <= b43_yqimg;
+        // b43
+        st6_real[86] <= b43_ypreal;
+        st6_img[86]  <= b43_ypimg;
+        st6_real[87] <= b43_yqreal;
+        st6_img[87]  <= b43_yqimg;
 
-        st6_real[26]  <= b44_ypreal;
-        st6_img[26]   <= b44_ypimg;
-        st6_real[154] <= b44_yqreal;
-        st6_img[154]  <= b44_yqimg;
+        // b44
+        st6_real[88] <= b44_ypreal;
+        st6_img[88]  <= b44_ypimg;
+        st6_real[89] <= b44_yqreal;
+        st6_img[89]  <= b44_yqimg;
 
-        st6_real[90]  <= b45_ypreal;
-        st6_img[90]   <= b45_ypimg;
-        st6_real[218] <= b45_yqreal;
-        st6_img[218]  <= b45_yqimg;
+        // b45
+        st6_real[90] <= b45_ypreal;
+        st6_img[90]  <= b45_ypimg;
+        st6_real[91] <= b45_yqreal;
+        st6_img[91]  <= b45_yqimg;
 
-        st6_real[58]  <= b46_ypreal;
-        st6_img[58]   <= b46_ypimg;
-        st6_real[186] <= b46_yqreal;
-        st6_img[186]  <= b46_yqimg;
+        // b46
+        st6_real[92] <= b46_ypreal;
+        st6_img[92]  <= b46_ypimg;
+        st6_real[93] <= b46_yqreal;
+        st6_img[93]  <= b46_yqimg;
 
-        st6_real[122] <= b47_ypreal;
-        st6_img[122]  <= b47_ypimg;
-        st6_real[250] <= b47_yqreal;
-        st6_img[250]  <= b47_yqimg;
+        // b47
+        st6_real[94] <= b47_ypreal;
+        st6_img[94]  <= b47_ypimg;
+        st6_real[95] <= b47_yqreal;
+        st6_img[95]  <= b47_yqimg;
 
-        st6_real[6]   <= b48_ypreal;
-        st6_img[6]    <= b48_ypimg;
-        st6_real[134] <= b48_yqreal;
-        st6_img[134]  <= b48_yqimg;
+        // b48
+        st6_real[96] <= b48_ypreal;
+        st6_img[96]  <= b48_ypimg;
+        st6_real[97] <= b48_yqreal;
+        st6_img[97]  <= b48_yqimg;
 
-        st6_real[70]  <= b49_ypreal;
-        st6_img[70]   <= b49_ypimg;
-        st6_real[198] <= b49_yqreal;
-        st6_img[198]  <= b49_yqimg;
+        // b49
+        st6_real[98] <= b49_ypreal;
+        st6_img[98]  <= b49_ypimg;
+        st6_real[99] <= b49_yqreal;
+        st6_img[99]  <= b49_yqimg;
 
-        st6_real[38]  <= b50_ypreal;
-        st6_img[38]   <= b50_ypimg;
-        st6_real[166] <= b50_yqreal;
-        st6_img[166]  <= b50_yqimg;
+        // b50
+        st6_real[100] <= b50_ypreal;
+        st6_img[100]  <= b50_ypimg;
+        st6_real[101] <= b50_yqreal;
+        st6_img[101]  <= b50_yqimg;
 
+        // b51
         st6_real[102] <= b51_ypreal;
         st6_img[102]  <= b51_ypimg;
-        st6_real[230] <= b51_yqreal;
-        st6_img[230]  <= b51_yqimg;
+        st6_real[103] <= b51_yqreal;
+        st6_img[103]  <= b51_yqimg;
 
-        st6_real[22]  <= b52_ypreal;
-        st6_img[22]   <= b52_ypimg;
-        st6_real[150] <= b52_yqreal;
-        st6_img[150]  <= b52_yqimg;
+        // b52
+        st6_real[104] <= b52_ypreal;
+        st6_img[104]  <= b52_ypimg;
+        st6_real[105] <= b52_yqreal;
+        st6_img[105]  <= b52_yqimg;
 
-        st6_real[86]  <= b53_ypreal;
-        st6_img[86]   <= b53_ypimg;
-        st6_real[214] <= b53_yqreal;
-        st6_img[214]  <= b53_yqimg;
+        // b53
+        st6_real[106] <= b53_ypreal;
+        st6_img[106]  <= b53_ypimg;
+        st6_real[107] <= b53_yqreal;
+        st6_img[107]  <= b53_yqimg;
 
-        st6_real[54]  <= b54_ypreal;
-        st6_img[54]   <= b54_ypimg;
-        st6_real[182] <= b54_yqreal;
-        st6_img[182]  <= b54_yqimg;
+        // b54
+        st6_real[108] <= b54_ypreal;
+        st6_img[108]  <= b54_ypimg;
+        st6_real[109] <= b54_yqreal;
+        st6_img[109]  <= b54_yqimg;
 
-        st6_real[118] <= b55_ypreal;
-        st6_img[118]  <= b55_ypimg;
-        st6_real[246] <= b55_yqreal;
-        st6_img[246]  <= b55_yqimg;
+        // b55
+        st6_real[110] <= b55_ypreal;
+        st6_img[110]  <= b55_ypimg;
+        st6_real[111] <= b55_yqreal;
+        st6_img[111]  <= b55_yqimg;
 
-        st6_real[14]  <= b56_ypreal;
-        st6_img[14]   <= b56_ypimg;
-        st6_real[142] <= b56_yqreal;
-        st6_img[142]  <= b56_yqimg;
+        // b56
+        st6_real[112] <= b56_ypreal;
+        st6_img[112]  <= b56_ypimg;
+        st6_real[113] <= b56_yqreal;
+        st6_img[113]  <= b56_yqimg;
 
-        st6_real[78]  <= b57_ypreal;
-        st6_img[78]   <= b57_ypimg;
-        st6_real[206] <= b57_yqreal;
-        st6_img[206]  <= b57_yqimg;
+        // b57
+        st6_real[114] <= b57_ypreal;
+        st6_img[114]  <= b57_ypimg;
+        st6_real[115] <= b57_yqreal;
+        st6_img[115]  <= b57_yqimg;
 
-        st6_real[46]  <= b58_ypreal;
-        st6_img[46]   <= b58_ypimg;
-        st6_real[174] <= b58_yqreal;
-        st6_img[174]  <= b58_yqimg;
+        // b58
+        st6_real[116] <= b58_ypreal;
+        st6_img[116]  <= b58_ypimg;
+        st6_real[117] <= b58_yqreal;
+        st6_img[117]  <= b58_yqimg;
 
-        st6_real[110] <= b59_ypreal;
-        st6_img[110]  <= b59_ypimg;
-        st6_real[238] <= b59_yqreal;
-        st6_img[238]  <= b59_yqimg;
+        // b59
+        st6_real[118] <= b59_ypreal;
+        st6_img[118]  <= b59_ypimg;
+        st6_real[119] <= b59_yqreal;
+        st6_img[119]  <= b59_yqimg;
 
-        st6_real[30]  <= b60_ypreal;
-        st6_img[30]   <= b60_ypimg;
-        st6_real[158] <= b60_yqreal;
-        st6_img[158]  <= b60_yqimg;
+        // b60
+        st6_real[120] <= b60_ypreal;
+        st6_img[120]  <= b60_ypimg;
+        st6_real[121] <= b60_yqreal;
+        st6_img[121]  <= b60_yqimg;
 
-        st6_real[94]  <= b61_ypreal;
-        st6_img[94]   <= b61_ypimg;
-        st6_real[222] <= b61_yqreal;
-        st6_img[222]  <= b61_yqimg;
+        // b61
+        st6_real[122] <= b61_ypreal;
+        st6_img[122]  <= b61_ypimg;
+        st6_real[123] <= b61_yqreal;
+        st6_img[123]  <= b61_yqimg;
 
-        st6_real[62]  <= b62_ypreal;
-        st6_img[62]   <= b62_ypimg;
-        st6_real[190] <= b62_yqreal;
-        st6_img[190]  <= b62_yqimg;
+        // b62
+        st6_real[124] <= b62_ypreal;
+        st6_img[124]  <= b62_ypimg;
+        st6_real[125] <= b62_yqreal;
+        st6_img[125]  <= b62_yqimg;
 
+        // b63
         st6_real[126] <= b63_ypreal;
         st6_img[126]  <= b63_ypimg;
-        st6_real[254] <= b63_yqreal;
-        st6_img[254]  <= b63_yqimg;
-        
+        st6_real[127] <= b63_yqreal;
+        st6_img[127]  <= b63_yqimg;
     end
     else if (cnt == 268) begin
-        st6_real[2]   <= b32_ypreal;
-        st6_img[2]    <= b32_ypimg;
-        st6_real[130] <= b32_yqreal;
-        st6_img[130]  <= b32_yqimg;
+        // b32
+        st6_real[128] <= b32_ypreal;
+        st6_img[128]  <= b32_ypimg;
+        st6_real[129] <= b32_yqreal;
+        st6_img[129]  <= b32_yqimg;
 
-        st6_real[66]  <= b33_ypreal;
-        st6_img[66]   <= b33_ypimg;
-        st6_real[194] <= b33_yqreal;
-        st6_img[194]  <= b33_yqimg;
+        // b33
+        st6_real[130] <= b33_ypreal;
+        st6_img[130]  <= b33_ypimg;
+        st6_real[131] <= b33_yqreal;
+        st6_img[131]  <= b33_yqimg;
 
-        st6_real[34]  <= b34_ypreal;
-        st6_img[34]   <= b34_ypimg;
-        st6_real[162] <= b34_yqreal;
-        st6_img[162]  <= b34_yqimg;
+        // b34
+        st6_real[132] <= b34_ypreal;
+        st6_img[132]  <= b34_ypimg;
+        st6_real[133] <= b34_yqreal;
+        st6_img[133]  <= b34_yqimg;
 
-        st6_real[98]  <= b35_ypreal;
-        st6_img[98]   <= b35_ypimg;
-        st6_real[226] <= b35_yqreal;
-        st6_img[226]  <= b35_yqimg;
+        // b35
+        st6_real[134] <= b35_ypreal;
+        st6_img[134]  <= b35_ypimg;
+        st6_real[135] <= b35_yqreal;
+        st6_img[135]  <= b35_yqimg;
 
-        st6_real[18]  <= b36_ypreal;
-        st6_img[18]   <= b36_ypimg;
-        st6_real[146] <= b36_yqreal;
-        st6_img[146]  <= b36_yqimg;
+        // b36
+        st6_real[136] <= b36_ypreal;
+        st6_img[136]  <= b36_ypimg;
+        st6_real[137] <= b36_yqreal;
+        st6_img[137]  <= b36_yqimg;
 
-        st6_real[82]  <= b37_ypreal;
-        st6_img[82]   <= b37_ypimg;
-        st6_real[210] <= b37_yqreal;
-        st6_img[210]  <= b37_yqimg;
+        // b37
+        st6_real[138] <= b37_ypreal;
+        st6_img[138]  <= b37_ypimg;
+        st6_real[139] <= b37_yqreal;
+        st6_img[139]  <= b37_yqimg;
 
-        st6_real[50]  <= b38_ypreal;
-        st6_img[50]   <= b38_ypimg;
-        st6_real[178] <= b38_yqreal;
-        st6_img[178]  <= b38_yqimg;
+        // b38
+        st6_real[140] <= b38_ypreal;
+        st6_img[140]  <= b38_ypimg;
+        st6_real[141] <= b38_yqreal;
+        st6_img[141]  <= b38_yqimg;
 
-        st6_real[114] <= b39_ypreal;
-        st6_img[114]  <= b39_ypimg;
-        st6_real[242] <= b39_yqreal;
-        st6_img[242]  <= b39_yqimg;
+        // b39
+        st6_real[142] <= b39_ypreal;
+        st6_img[142]  <= b39_ypimg;
+        st6_real[143] <= b39_yqreal;
+        st6_img[143]  <= b39_yqimg;
 
-        st6_real[10]  <= b40_ypreal;
-        st6_img[10]   <= b40_ypimg;
-        st6_real[138] <= b40_yqreal;
-        st6_img[138]  <= b40_yqimg;
+        // b40
+        st6_real[144] <= b40_ypreal;
+        st6_img[144]  <= b40_ypimg;
+        st6_real[145] <= b40_yqreal;
+        st6_img[145]  <= b40_yqimg;
 
-        st6_real[74]  <= b41_ypreal;
-        st6_img[74]   <= b41_ypimg;
-        st6_real[202] <= b41_yqreal;
-        st6_img[202]  <= b41_yqimg;
+        // b41
+        st6_real[146] <= b41_ypreal;
+        st6_img[146]  <= b41_ypimg;
+        st6_real[147] <= b41_yqreal;
+        st6_img[147]  <= b41_yqimg;
 
-        st6_real[42]  <= b42_ypreal;
-        st6_img[42]   <= b42_ypimg;
-        st6_real[170] <= b42_yqreal;
-        st6_img[170]  <= b42_yqimg;
+        // b42
+        st6_real[148] <= b42_ypreal;
+        st6_img[148]  <= b42_ypimg;
+        st6_real[149] <= b42_yqreal;
+        st6_img[149]  <= b42_yqimg;
 
-        st6_real[106] <= b43_ypreal;
-        st6_img[106]  <= b43_ypimg;
-        st6_real[234] <= b43_yqreal;
-        st6_img[234]  <= b43_yqimg;
+        // b43
+        st6_real[150] <= b43_ypreal;
+        st6_img[150]  <= b43_ypimg;
+        st6_real[151] <= b43_yqreal;
+        st6_img[151]  <= b43_yqimg;
 
-        st6_real[26]  <= b44_ypreal;
-        st6_img[26]   <= b44_ypimg;
-        st6_real[154] <= b44_yqreal;
-        st6_img[154]  <= b44_yqimg;
+        // b44
+        st6_real[152] <= b44_ypreal;
+        st6_img[152]  <= b44_ypimg;
+        st6_real[153] <= b44_yqreal;
+        st6_img[153]  <= b44_yqimg;
 
-        st6_real[90]  <= b45_ypreal;
-        st6_img[90]   <= b45_ypimg;
-        st6_real[218] <= b45_yqreal;
-        st6_img[218]  <= b45_yqimg;
+        // b45
+        st6_real[154] <= b45_ypreal;
+        st6_img[154]  <= b45_ypimg;
+        st6_real[155] <= b45_yqreal;
+        st6_img[155]  <= b45_yqimg;
 
-        st6_real[58]  <= b46_ypreal;
-        st6_img[58]   <= b46_ypimg;
-        st6_real[186] <= b46_yqreal;
-        st6_img[186]  <= b46_yqimg;
+        // b46
+        st6_real[156] <= b46_ypreal;
+        st6_img[156]  <= b46_ypimg;
+        st6_real[157] <= b46_yqreal;
+        st6_img[157]  <= b46_yqimg;
 
-        st6_real[122] <= b47_ypreal;
-        st6_img[122]  <= b47_ypimg;
-        st6_real[250] <= b47_yqreal;
-        st6_img[250]  <= b47_yqimg;
+        // b47
+        st6_real[158] <= b47_ypreal;
+        st6_img[158]  <= b47_ypimg;
+        st6_real[159] <= b47_yqreal;
+        st6_img[159]  <= b47_yqimg;
 
-        st6_real[6]   <= b48_ypreal;
-        st6_img[6]    <= b48_ypimg;
-        st6_real[134] <= b48_yqreal;
-        st6_img[134]  <= b48_yqimg;
+        // b48
+        st6_real[160] <= b48_ypreal;
+        st6_img[160]  <= b48_ypimg;
+        st6_real[161] <= b48_yqreal;
+        st6_img[161]  <= b48_yqimg;
 
-        st6_real[70]  <= b49_ypreal;
-        st6_img[70]   <= b49_ypimg;
-        st6_real[198] <= b49_yqreal;
-        st6_img[198]  <= b49_yqimg;
+        // b49
+        st6_real[162] <= b49_ypreal;
+        st6_img[162]  <= b49_ypimg;
+        st6_real[163] <= b49_yqreal;
+        st6_img[163]  <= b49_yqimg;
 
-        st6_real[38]  <= b50_ypreal;
-        st6_img[38]   <= b50_ypimg;
-        st6_real[166] <= b50_yqreal;
-        st6_img[166]  <= b50_yqimg;
+        // b50
+        st6_real[164] <= b50_ypreal;
+        st6_img[164]  <= b50_ypimg;
+        st6_real[165] <= b50_yqreal;
+        st6_img[165]  <= b50_yqimg;
 
-        st6_real[102] <= b51_ypreal;
-        st6_img[102]  <= b51_ypimg;
-        st6_real[230] <= b51_yqreal;
-        st6_img[230]  <= b51_yqimg;
+        // b51
+        st6_real[166] <= b51_ypreal;
+        st6_img[166]  <= b51_ypimg;
+        st6_real[167] <= b51_yqreal;
+        st6_img[167]  <= b51_yqimg;
 
-        st6_real[22]  <= b52_ypreal;
-        st6_img[22]   <= b52_ypimg;
-        st6_real[150] <= b52_yqreal;
-        st6_img[150]  <= b52_yqimg;
+        // b52
+        st6_real[168] <= b52_ypreal;
+        st6_img[168]  <= b52_ypimg;
+        st6_real[169] <= b52_yqreal;
+        st6_img[169]  <= b52_yqimg;
 
-        st6_real[86]  <= b53_ypreal;
-        st6_img[86]   <= b53_ypimg;
-        st6_real[214] <= b53_yqreal;
-        st6_img[214]  <= b53_yqimg;
+        // b53
+        st6_real[170] <= b53_ypreal;
+        st6_img[170]  <= b53_ypimg;
+        st6_real[171] <= b53_yqreal;
+        st6_img[171]  <= b53_yqimg;
 
-        st6_real[54]  <= b54_ypreal;
-        st6_img[54]   <= b54_ypimg;
-        st6_real[182] <= b54_yqreal;
-        st6_img[182]  <= b54_yqimg;
+        // b54
+        st6_real[172] <= b54_ypreal;
+        st6_img[172]  <= b54_ypimg;
+        st6_real[173] <= b54_yqreal;
+        st6_img[173]  <= b54_yqimg;
 
-        st6_real[118] <= b55_ypreal;
-        st6_img[118]  <= b55_ypimg;
-        st6_real[246] <= b55_yqreal;
-        st6_img[246]  <= b55_yqimg;
+        // b55
+        st6_real[174] <= b55_ypreal;
+        st6_img[174]  <= b55_ypimg;
+        st6_real[175] <= b55_yqreal;
+        st6_img[175]  <= b55_yqimg;
 
-        st6_real[14]  <= b56_ypreal;
-        st6_img[14]   <= b56_ypimg;
-        st6_real[142] <= b56_yqreal;
-        st6_img[142]  <= b56_yqimg;
+        // b56
+        st6_real[176] <= b56_ypreal;
+        st6_img[176]  <= b56_ypimg;
+        st6_real[177] <= b56_yqreal;
+        st6_img[177]  <= b56_yqimg;
 
-        st6_real[78]  <= b57_ypreal;
-        st6_img[78]   <= b57_ypimg;
-        st6_real[206] <= b57_yqreal;
-        st6_img[206]  <= b57_yqimg;
+        // b57
+        st6_real[178] <= b57_ypreal;
+        st6_img[178]  <= b57_ypimg;
+        st6_real[179] <= b57_yqreal;
+        st6_img[179]  <= b57_yqimg;
 
-        st6_real[46]  <= b58_ypreal;
-        st6_img[46]   <= b58_ypimg;
-        st6_real[174] <= b58_yqreal;
-        st6_img[174]  <= b58_yqimg;
+        // b58
+        st6_real[180] <= b58_ypreal;
+        st6_img[180]  <= b58_ypimg;
+        st6_real[181] <= b58_yqreal;
+        st6_img[181]  <= b58_yqimg;
 
-        st6_real[110] <= b59_ypreal;
-        st6_img[110]  <= b59_ypimg;
-        st6_real[238] <= b59_yqreal;
-        st6_img[238]  <= b59_yqimg;
+        // b59
+        st6_real[182] <= b59_ypreal;
+        st6_img[182]  <= b59_ypimg;
+        st6_real[183] <= b59_yqreal;
+        st6_img[183]  <= b59_yqimg;
 
-        st6_real[30]  <= b60_ypreal;
-        st6_img[30]   <= b60_ypimg;
-        st6_real[158] <= b60_yqreal;
-        st6_img[158]  <= b60_yqimg;
+        // b60
+        st6_real[184] <= b60_ypreal;
+        st6_img[184]  <= b60_ypimg;
+        st6_real[185] <= b60_yqreal;
+        st6_img[185]  <= b60_yqimg;
 
-        st6_real[94]  <= b61_ypreal;
-        st6_img[94]   <= b61_ypimg;
-        st6_real[222] <= b61_yqreal;
-        st6_img[222]  <= b61_yqimg;
+        // b61
+        st6_real[186] <= b61_ypreal;
+        st6_img[186]  <= b61_ypimg;
+        st6_real[187] <= b61_yqreal;
+        st6_img[187]  <= b61_yqimg;
 
-        st6_real[62]  <= b62_ypreal;
-        st6_img[62]   <= b62_ypimg;
-        st6_real[190] <= b62_yqreal;
-        st6_img[190]  <= b62_yqimg;
+        // b62
+        st6_real[188] <= b62_ypreal;
+        st6_img[188]  <= b62_ypimg;
+        st6_real[189] <= b62_yqreal;
+        st6_img[189]  <= b62_yqimg;
 
-        st6_real[126] <= b63_ypreal;
-        st6_img[126]  <= b63_ypimg;
-        st6_real[254] <= b63_yqreal;
-        st6_img[254]  <= b63_yqimg;        
+        // b63
+        st6_real[190] <= b63_ypreal;
+        st6_img[190]  <= b63_ypimg;
+        st6_real[191] <= b63_yqreal;
+        st6_img[191]  <= b63_yqimg;
     end
     else if (cnt == 269) begin
-        st6_real[3]   <= b32_ypreal;
-        st6_img[3]    <= b32_ypimg;
-        st6_real[131] <= b32_yqreal;
-        st6_img[131]  <= b32_yqimg;
+        // b32
+        st6_real[192] <= b32_ypreal;
+        st6_img[192]  <= b32_ypimg;
+        st6_real[193] <= b32_yqreal;
+        st6_img[193]  <= b32_yqimg;
 
-        st6_real[67]  <= b33_ypreal;
-        st6_img[67]   <= b33_ypimg;
+        // b33
+        st6_real[194] <= b33_ypreal;
+        st6_img[194]  <= b33_ypimg;
         st6_real[195] <= b33_yqreal;
         st6_img[195]  <= b33_yqimg;
 
-        st6_real[35]  <= b34_ypreal;
-        st6_img[35]   <= b34_ypimg;
-        st6_real[163] <= b34_yqreal;
-        st6_img[163]  <= b34_yqimg;
+        // b34
+        st6_real[196] <= b34_ypreal;
+        st6_img[196]  <= b34_ypimg;
+        st6_real[197] <= b34_yqreal;
+        st6_img[197]  <= b34_yqimg;
 
-        st6_real[99]  <= b35_ypreal;
-        st6_img[99]   <= b35_ypimg;
-        st6_real[227] <= b35_yqreal;
-        st6_img[227]  <= b35_yqimg;
+        // b35
+        st6_real[198] <= b35_ypreal;
+        st6_img[198]  <= b35_ypimg;
+        st6_real[199] <= b35_yqreal;
+        st6_img[199]  <= b35_yqimg;
 
-        st6_real[19]  <= b36_ypreal;
-        st6_img[19]   <= b36_ypimg;
-        st6_real[147] <= b36_yqreal;
-        st6_img[147]  <= b36_yqimg;
+        // b36
+        st6_real[200] <= b36_ypreal;
+        st6_img[200]  <= b36_ypimg;
+        st6_real[201] <= b36_yqreal;
+        st6_img[201]  <= b36_yqimg;
 
-        st6_real[83]  <= b37_ypreal;
-        st6_img[83]   <= b37_ypimg;
-        st6_real[211] <= b37_yqreal;
-        st6_img[211]  <= b37_yqimg;
+        // b37
+        st6_real[202] <= b37_ypreal;
+        st6_img[202]  <= b37_ypimg;
+        st6_real[203] <= b37_yqreal;
+        st6_img[203]  <= b37_yqimg;
 
-        st6_real[51]  <= b38_ypreal;
-        st6_img[51]   <= b38_ypimg;
-        st6_real[179] <= b38_yqreal;
-        st6_img[179]  <= b38_yqimg;
+        // b38
+        st6_real[204] <= b38_ypreal;
+        st6_img[204]  <= b38_ypimg;
+        st6_real[205] <= b38_yqreal;
+        st6_img[205]  <= b38_yqimg;
 
-        st6_real[115] <= b39_ypreal;
-        st6_img[115]  <= b39_ypimg;
-        st6_real[243] <= b39_yqreal;
-        st6_img[243]  <= b39_yqimg;
+        // b39
+        st6_real[206] <= b39_ypreal;
+        st6_img[206]  <= b39_ypimg;
+        st6_real[207] <= b39_yqreal;
+        st6_img[207]  <= b39_yqimg;
 
-        st6_real[11]  <= b40_ypreal;
-        st6_img[11]   <= b40_ypimg;
-        st6_real[139] <= b40_yqreal;
-        st6_img[139]  <= b40_yqimg;
+        // b40
+        st6_real[208] <= b40_ypreal;
+        st6_img[208]  <= b40_ypimg;
+        st6_real[209] <= b40_yqreal;
+        st6_img[209]  <= b40_yqimg;
 
-        st6_real[75]  <= b41_ypreal;
-        st6_img[75]   <= b41_ypimg;
-        st6_real[203] <= b41_yqreal;
-        st6_img[203]  <= b41_yqimg;
+        // b41
+        st6_real[210] <= b41_ypreal;
+        st6_img[210]  <= b41_ypimg;
+        st6_real[211] <= b41_yqreal;
+        st6_img[211]  <= b41_yqimg;
 
-        st6_real[43]  <= b42_ypreal;
-        st6_img[43]   <= b42_ypimg;
-        st6_real[171] <= b42_yqreal;
-        st6_img[171]  <= b42_yqimg;
+        // b42
+        st6_real[212] <= b42_ypreal;
+        st6_img[212]  <= b42_ypimg;
+        st6_real[213] <= b42_yqreal;
+        st6_img[213]  <= b42_yqimg;
 
-        st6_real[107] <= b43_ypreal;
-        st6_img[107]  <= b43_ypimg;
-        st6_real[235] <= b43_yqreal;
-        st6_img[235]  <= b43_yqimg;
+        // b43
+        st6_real[214] <= b43_ypreal;
+        st6_img[214]  <= b43_ypimg;
+        st6_real[215] <= b43_yqreal;
+        st6_img[215]  <= b43_yqimg;
 
-        st6_real[27]  <= b44_ypreal;
-        st6_img[27]   <= b44_ypimg;
-        st6_real[155] <= b44_yqreal;
-        st6_img[155]  <= b44_yqimg;
+        // b44
+        st6_real[216] <= b44_ypreal;
+        st6_img[216]  <= b44_ypimg;
+        st6_real[217] <= b44_yqreal;
+        st6_img[217]  <= b44_yqimg;
 
-        st6_real[91]  <= b45_ypreal;
-        st6_img[91]   <= b45_ypimg;
+        // b45
+        st6_real[218] <= b45_ypreal;
+        st6_img[218]  <= b45_ypimg;
         st6_real[219] <= b45_yqreal;
         st6_img[219]  <= b45_yqimg;
 
-        st6_real[59]  <= b46_ypreal;
-        st6_img[59]   <= b46_ypimg;
-        st6_real[187] <= b46_yqreal;
-        st6_img[187]  <= b46_yqimg;
+        // b46
+        st6_real[220] <= b46_ypreal;
+        st6_img[220]  <= b46_ypimg;
+        st6_real[221] <= b46_yqreal;
+        st6_img[221]  <= b46_yqimg;
 
-        st6_real[123] <= b47_ypreal;
-        st6_img[123]  <= b47_ypimg;
-        st6_real[251] <= b47_yqreal;
-        st6_img[251]  <= b47_yqimg;
+        // b47
+        st6_real[222] <= b47_ypreal;
+        st6_img[222]  <= b47_ypimg;
+        st6_real[223] <= b47_yqreal;
+        st6_img[223]  <= b47_yqimg;
 
-        st6_real[7]   <= b48_ypreal;
-        st6_img[7]    <= b48_ypimg;
-        st6_real[135] <= b48_yqreal;
-        st6_img[135]  <= b48_yqimg;
+        // b48
+        st6_real[224] <= b48_ypreal;
+        st6_img[224]  <= b48_ypimg;
+        st6_real[225] <= b48_yqreal;
+        st6_img[225]  <= b48_yqimg;
 
-        st6_real[71]  <= b49_ypreal;
-        st6_img[71]   <= b49_ypimg;
-        st6_real[199] <= b49_yqreal;
-        st6_img[199]  <= b49_yqimg;
+        // b49
+        st6_real[226] <= b49_ypreal;
+        st6_img[226]  <= b49_ypimg;
+        st6_real[227] <= b49_yqreal;
+        st6_img[227]  <= b49_yqimg;
 
-        st6_real[39]  <= b50_ypreal;
-        st6_img[39]   <= b50_ypimg;
-        st6_real[167] <= b50_yqreal;
-        st6_img[167]  <= b50_yqimg;
+        // b50
+        st6_real[228] <= b50_ypreal;
+        st6_img[228]  <= b50_ypimg;
+        st6_real[229] <= b50_yqreal;
+        st6_img[229]  <= b50_yqimg;
 
-        st6_real[103] <= b51_ypreal;
-        st6_img[103]  <= b51_ypimg;
+        // b51
+        st6_real[230] <= b51_ypreal;
+        st6_img[230]  <= b51_ypimg;
         st6_real[231] <= b51_yqreal;
         st6_img[231]  <= b51_yqimg;
 
-        st6_real[23]  <= b52_ypreal;
-        st6_img[23]   <= b52_ypimg;
-        st6_real[151] <= b52_yqreal;
-        st6_img[151]  <= b52_yqimg;
+        // b52
+        st6_real[232] <= b52_ypreal;
+        st6_img[232]  <= b52_ypimg;
+        st6_real[233] <= b52_yqreal;
+        st6_img[233]  <= b52_yqimg;
 
-        st6_real[87]  <= b53_ypreal;
-        st6_img[87]   <= b53_ypimg;
-        st6_real[215] <= b53_yqreal;
-        st6_img[215]  <= b53_yqimg;
+        // b53
+        st6_real[234] <= b53_ypreal;
+        st6_img[234]  <= b53_ypimg;
+        st6_real[235] <= b53_yqreal;
+        st6_img[235]  <= b53_yqimg;
 
-        st6_real[55]  <= b54_ypreal;
-        st6_img[55]   <= b54_ypimg;
-        st6_real[183] <= b54_yqreal;
-        st6_img[183]  <= b54_yqimg;
+        // b54
+        st6_real[236] <= b54_ypreal;
+        st6_img[236]  <= b54_ypimg;
+        st6_real[237] <= b54_yqreal;
+        st6_img[237]  <= b54_yqimg;
 
-        st6_real[119] <= b55_ypreal;
-        st6_img[119]  <= b55_ypimg;
-        st6_real[247] <= b55_yqreal;
-        st6_img[247]  <= b55_yqimg;
+        // b55
+        st6_real[238] <= b55_ypreal;
+        st6_img[238]  <= b55_ypimg;
+        st6_real[239] <= b55_yqreal;
+        st6_img[239]  <= b55_yqimg;
 
-        st6_real[15]  <= b56_ypreal;
-        st6_img[15]   <= b56_ypimg;
-        st6_real[143] <= b56_yqreal;
-        st6_img[143]  <= b56_yqimg;
+        // b56
+        st6_real[240] <= b56_ypreal;
+        st6_img[240]  <= b56_ypimg;
+        st6_real[241] <= b56_yqreal;
+        st6_img[241]  <= b56_yqimg;
 
-        st6_real[79]  <= b57_ypreal;
-        st6_img[79]   <= b57_ypimg;
-        st6_real[207] <= b57_yqreal;
-        st6_img[207]  <= b57_yqimg;
+        // b57
+        st6_real[242] <= b57_ypreal;
+        st6_img[242]  <= b57_ypimg;
+        st6_real[243] <= b57_yqreal;
+        st6_img[243]  <= b57_yqimg;
 
-        st6_real[47]  <= b58_ypreal;
-        st6_img[47]   <= b58_ypimg;
-        st6_real[175] <= b58_yqreal;
-        st6_img[175]  <= b58_yqimg;
+        // b58
+        st6_real[244] <= b58_ypreal;
+        st6_img[244]  <= b58_ypimg;
+        st6_real[245] <= b58_yqreal;
+        st6_img[245]  <= b58_yqimg;
 
-        st6_real[111] <= b59_ypreal;
-        st6_img[111]  <= b59_ypimg;
-        st6_real[239] <= b59_yqreal;
-        st6_img[239]  <= b59_yqimg;
+        // b59
+        st6_real[246] <= b59_ypreal;
+        st6_img[246]  <= b59_ypimg;
+        st6_real[247] <= b59_yqreal;
+        st6_img[247]  <= b59_yqimg;
 
-        st6_real[31]  <= b60_ypreal;
-        st6_img[31]   <= b60_ypimg;
-        st6_real[159] <= b60_yqreal;
-        st6_img[159]  <= b60_yqimg;
+        // b60
+        st6_real[248] <= b60_ypreal;
+        st6_img[248]  <= b60_ypimg;
+        st6_real[249] <= b60_yqreal;
+        st6_img[249]  <= b60_yqimg;
 
-        st6_real[95]  <= b61_ypreal;
-        st6_img[95]   <= b61_ypimg;
-        st6_real[223] <= b61_yqreal;
-        st6_img[223]  <= b61_yqimg;
+        // b61
+        st6_real[250] <= b61_ypreal;
+        st6_img[250]  <= b61_ypimg;
+        st6_real[251] <= b61_yqreal;
+        st6_img[251]  <= b61_yqimg;
 
-        st6_real[63]  <= b62_ypreal;
-        st6_img[63]   <= b62_ypimg;
-        st6_real[191] <= b62_yqreal;
-        st6_img[191]  <= b62_yqimg;
+        // b62
+        st6_real[252] <= b62_ypreal;
+        st6_img[252]  <= b62_ypimg;
+        st6_real[253] <= b62_yqreal;
+        st6_img[253]  <= b62_yqimg;
 
-        st6_real[127] <= b63_ypreal;
-        st6_img[127]  <= b63_ypimg;
+        // b63
+        st6_real[254] <= b63_ypreal;
+        st6_img[254]  <= b63_ypimg;
         st6_real[255] <= b63_yqreal;
         st6_img[255]  <= b63_yqimg;
-        
     end
+
 end
 
 always @(posedge clk) begin
@@ -4693,7 +5072,7 @@ always @(posedge clk) begin
         out_cnt <= 0;
     end
     else begin
-        if (cnt == 268) begin
+        if (cnt == 268 || out_cnt != 0) begin
             out_cnt <= out_cnt + 1;
         end
     end
@@ -4703,25 +5082,31 @@ always @(posedge clk) begin
         out_valid <= 0;
     end
     else begin
-        if (cnt == 267 || (out_cnt > 0 && out_cnt != 255)) begin
+        if (cnt == 268 || out_cnt != 0) begin
             out_valid <= 1;
         end
-        else if (out_cnt == 255) begin
+        else if (out_cnt == 0) begin
             out_valid <= 0;
         end
     end
 end
+       
+wire [7:0] index_br;  
+
+assign index_br = {out_cnt[0], out_cnt[1], out_cnt[2], out_cnt[3],
+                    out_cnt[4], out_cnt[5], out_cnt[6], out_cnt[7] };
+
 always @(posedge clk) begin
     if (!rst_n) begin
         y_real <= 0;
         y_img <= 0;
     end
     else begin
-        if (cnt == 267 || (out_cnt > 0 && out_cnt != 255)) begin
-            y_real <= st6_real[out_cnt];
-            y_img <= st6_img[out_cnt];
+        if (cnt == 268 || out_cnt != 0) begin
+            y_real <= st6_real[index_br];
+            y_img <= st6_img[index_br];
         end
-        else if (out_cnt == 255) begin
+        else if (out_cnt == 0) begin
             y_real <= 0;
             y_img <= 0;            
         end
@@ -5073,7 +5458,7 @@ Xm(p) ------------------------> Xm+1(p)
 Xm(q) ------------------------> Xm+1(q)
       Wn          -1
 *//////////////////////////////////////////////////////
-module butterfly #(parameter integer SHIFT = 13  // twiddle 放大的位數，預設 2^13，跟 0x2000 一樣
+module butterfly #(parameter integer SHIFT = 15  // twiddle 放大的位數，預設 2^13，跟 0x2000 一樣
 )(
     input  signed [15:0] xp_real,
     input  signed [15:0] xp_img,
@@ -5108,15 +5493,14 @@ module butterfly #(parameter integer SHIFT = 13  // twiddle 放大的位數，�
     //    先 sign-extend 再 shift
     // --------------------------------------------------------
     wire signed [31:0] xp_real_scaled =
-        {{(32-16){xp_real[15]}}, xp_real} <<< SHIFT;  // xp * 2^SHIFT
+        {{16{xp_real[15]}}, xp_real} <<< SHIFT;  // xp * 2^SHIFT
     wire signed [31:0] xp_img_scaled  =
-        {{(32-16){xp_img[15]}},  xp_img } <<< SHIFT;  // xp * 2^SHIFT
+        {{16{xp_img[15]}},  xp_img } <<< SHIFT;  // xp * 2^SHIFT
 
     // --------------------------------------------------------
     // 3) butterfly：
     //    yp = xp + xq * W
     //    yq = xp - xq * W
-    //    此時結果代表 (xp ± xq*W) * 2^SHIFT
     // --------------------------------------------------------
     wire signed [31:0] yp_real_scaled = xp_real_scaled + xq_w_real;
     wire signed [31:0] yp_img_scaled  = xp_img_scaled  + xq_w_imag;
@@ -5126,7 +5510,7 @@ module butterfly #(parameter integer SHIFT = 13  // twiddle 放大的位數，�
     // --------------------------------------------------------
     // 4) 丟掉低 SHIFT bits：除以 2^SHIFT
     //    回到和輸入一樣的 Q1.15 scale（16-bit）
-    //    取 [SHIFT+15 : SHIFT]，跟他那個 [39], [36:13] 的概念一樣
+    //    取 [SHIFT+15 : SHIFT]
     // --------------------------------------------------------
     assign yp_real = yp_real_scaled[SHIFT+15 : SHIFT];
     assign yp_img  = yp_img_scaled [SHIFT+15 : SHIFT];
