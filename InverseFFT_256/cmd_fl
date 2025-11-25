@@ -24,5 +24,6 @@
 // List your files here -------------
 //two_bit_counter.v
 //two_bit_test.v
+FFT256.v
 IFFT256.v
 PATTERN.v
