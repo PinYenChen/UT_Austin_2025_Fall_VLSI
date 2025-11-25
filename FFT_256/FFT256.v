@@ -242,6 +242,7 @@ always @(posedge clk) begin
     end
     else begin
         if (in_valid)  in_cnt <= in_cnt + 1;
+        else if (cur_state == IDLE) in_cnt <= 0;
     end
 end
 always @(posedge clk) begin
@@ -252,7 +253,7 @@ always @(posedge clk) begin
         if ((in_valid || cnt != 0) && &cnt != 1) begin
             cnt <= cnt + 1;
         end
-        else if (&cnt == 1) begin
+        else if (&cnt == 1 && cur_state != IDLE) begin
             cnt <= cnt;
         end
         else if (cur_state == IDLE) begin

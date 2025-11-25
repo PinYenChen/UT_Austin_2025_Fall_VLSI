@@ -339,7 +339,7 @@ end
 initial begin
     // Initialize signals
     reset_task;
-    pat_tot = 1;
+    pat_tot = 10000;
     for (i = 0 ; i < 256; i = i+1) begin
         xp_real_reg[i] = 0;
         xp_img_reg[i] = 0;
@@ -640,12 +640,13 @@ end
 endtask
 
 task input_task; begin
-    /*
+    
     for (i = 0 ; i < 256 ; i = i + 1) begin
         xp_real_reg[i] = $urandom_range(-32768, 32767);
         xp_img_reg[i] = $urandom_range(-32768, 32767);
     end
-    */
+    
+    /*
     f_in  = $fopen("fft_input_q15_hex.txt", "r");
     if (f_in == 0) begin
         $display("Failed to open input.txt");
@@ -658,6 +659,7 @@ task input_task; begin
 		xp_real_reg[i] = in_real;
 		xp_img_reg[i] = in_img;
     end
+    */
     cal_gold_task;
 end
 endtask
