@@ -1,0 +1,28 @@
+// commandline options and file lists
+// Hyeon-Yeong Yeo
+// 10/20/2025
+// ----------------------------------
+
+// Acceleration options, check doc before using
+// -caxl
+// +speedup
+
+
+// overwrite timescale (comment out if you do not want)
+-timescale=1ns/10ps
+
+// SystemVerilog flag, if you are using Systemverilog
+// Note that SystemVerilog is back compatable with Verilog
+// -sverilog
+
+
+// -y with folder, which contains source files
+// -y models2
+
+// -v with Verilog or SystemVerilog files
+-v
+// List your files here -------------
+//two_bit_counter.v
+//two_bit_test.v
+IFFT256.v
+PATTERN.v
