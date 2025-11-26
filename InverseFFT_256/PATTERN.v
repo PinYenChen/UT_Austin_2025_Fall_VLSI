@@ -42,14 +42,6 @@ integer a;
 reg signed [15:0] STG_R [0:8][0:255];  // 9 個 stage (0~8)，每個 256 點
 reg signed [15:0] STG_I [0:8][0:255];
 
-// 差值與絕對值（用整數）
-reg signed [16:0] diff_r_s, diff_i_s;  // 多 1 bit 防溢位
-integer           abs_diff_r, abs_diff_i;
-
-// 容許的誤差 (LSB)
-localparam integer TOL = 4;  // = 4 LSB ≈ 12e-5
-
-
 reg[9:0] out_counter;
 reg signed [15:0] xp_real_reg[0:255], xp_img_reg[0:255];
 reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
@@ -360,6 +352,8 @@ initial begin
         in_xp_img = 'bx;
         latency = 0;
 
+        conjugate_task;
+        cal_gold_task;
         wait_out_valid_task;
         check_ans_task;
         $display("\033[0;34mPASS SET NO.%4d,\033[m \033[0;32m     Execution Cycle: %3d\033[m", pat_num, latency);
@@ -434,7 +428,16 @@ begin
 end
 endfunction
 
-task cal_gold_task;
+task cal_gold_task; begin
+    fft_task;
+    for (i = 0 ; i < 256; i = i + 1) begin
+            golden_out_yp_real[n] = (temp_golden_out_yp_real[n])/256;
+            golden_out_yp_img[n]  = (-temp_golden_out_yp_img[n])/256; 
+    end
+end
+endtask
+
+task fft_task;
     integer N;
     integer STAGES;
     integer s, n, g, j;
@@ -450,7 +453,7 @@ begin
     // 0) stage0 接 DUT 的 input
     for (n = 0; n < N; n = n + 1) begin
         STG_R[0][n] = xp_real_reg[n];  // Q1.15
-        STG_I[0][n] = xp_img_reg[n];
+        STG_I[0][n] = -xp_img_reg[n];
     end
 
     // 1) 8 個 stage，DIF + 你的 wiring + twiddle 排法
@@ -508,84 +511,11 @@ begin
 
     // 2) 輸出 stage 8 的結果（假設 DUT 也是 bit-reversed order）
     for (n = 0; n < N; n = n + 1) begin
-        golden_out_yp_real[n] = STG_R[STAGES][bitrev8(n)][15:0];
-        golden_out_yp_img[n]  = STG_I[STAGES][bitrev8(n)][15:0];
+        temp_golden_out_yp_real[n] = STG_R[STAGES][bitrev8(n)][15:0];
+        temp_golden_out_yp_img[n]  = STG_I[STAGES][bitrev8(n)][15:0];
     end
 end
 endtask
-
-task cal_gold_task0; begin
-    
-    integer N;
-    real    PI;
-    real    scale;
-
-    // input 轉成 real
-    real xr [0:255];
-    real xi [0:255];
-
-    // DFT 暫存
-    integer n, k;
-    real    sumr, sumi;
-
-    // twiddle real 形式
-    integer tw_idx;
-    real    twr, twi;
-
-    // Q1.15 轉換暫存
-    integer tmp_r, tmp_i;
-    // twiddle table: Q1.15, same as FFT_256 design
-    N     = 256;
-    PI    = 3.141592653589793;
-    // 跟硬體一樣：8 stage 每 stage /2 → 等效 /256
-    scale = 1.0 / 256.0;
-
-    // 1) Q1.15 array -> real (-1.0 ~ 1.0)
-    for (n = 0; n < N; n = n + 1) begin
-        xr[n] = $itor(xp_real_reg[n]) / 32768.0;
-        xi[n] = $itor(xp_img_reg[n])  / 32768.0;
-    end
-
-    // 2) 用「量化過的 twiddle table」做 256 點 DFT
-    //    Y[k] = Σ x[n] * W^(k*n)，其中 W^m 由 w_real/img[m] 給定 (Q1.15)
-    for (k = 0; k < N; k = k + 1) begin
-        sumr = 0.0;
-        sumi = 0.0;
-
-        for (n = 0; n < N; n = n + 1) begin
-            tw_idx = (k * n) & 8'hFF;  // (k*n) mod 256
-
-            // Q1.15 twiddle -> real
-            twr = $itor(w_real[tw_idx]) / 32768.0;
-            twi = $itor(w_img [tw_idx]) / 32768.0;
-
-            // (xr + j*xi) * (twr + j*twi)
-            sumr = sumr + (xr[n]*twr - xi[n]*twi);
-            sumi = sumi + (xr[n]*twi + xi[n]*twr);
-        end
-
-        // 硬體總體 scaling /256
-        sumr = sumr * scale;
-        sumi = sumi * scale;
-
-        // 3) real -> Q1.15，使用 truncate（模擬 $rtoi）
-        tmp_r = $rtoi(sumr * 32768.0);  // toward 0
-        tmp_i = $rtoi(sumi * 32768.0);
-
-        // 飽和到 [-32768, 32767]
-        if (tmp_r >  32767) tmp_r =  32767;
-        if (tmp_r < -32768) tmp_r = -32768;
-        if (tmp_i >  32767) tmp_i =  32767;
-        if (tmp_i < -32768) tmp_i = -32768;
-
-        golden_out_yp_real[k] = tmp_r[15:0];
-        golden_out_yp_img[k]  = tmp_i[15:0];
-    end
-    
-
-end
-endtask
-
 
 
 task check_ans_task; begin
@@ -660,7 +590,6 @@ task input_task; begin
 		xp_img_reg[i] = in_img;
     end
     */
-    cal_gold_task;
 end
 endtask
 
@@ -736,7 +665,7 @@ task display_pass; begin
 	$display("              clock period = %4fns", CYCLE);
 	$display("**************************************************");
 end endtask
-FFT_256 fft_256(
+IFFT256 ifft_256(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
