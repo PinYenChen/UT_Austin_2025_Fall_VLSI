@@ -16,6 +16,9 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //############################################################################
 
+// ==============================================
+// Conjugate ==> FFT256 ==> Conjugate ==> >>8
+// ==============================================
 module IFFT_256(
     clk,
     rst_n,
@@ -37,17 +40,13 @@ wire signed [15:0] in_xp_real, in_xp_img;
 wire signed [15:0] out_yp_real, out_yp_img;
 wire out_valid_fft;
 
-assign in_valid_fft = in_valid;
-assign clk_fft = clk;
-assign rst_n_fft = rst_n;
-
-reg [15:0] out_reg_real_fft [0:255];
-reg [15:0] out_reg_img_fft [0:255];
-reg [7:0] out_cnt_fft;
-
-localparam [1:0]
+reg [15:0] out_reg_real_fft;
+reg [15:0] out_reg_img_fft;
+//reg [7:0] out_cnt_fft;
+/*
+localparam
   IDLE    ='d0,
-  FFT ='d1,
+  CAL ='d1,
   DIVIDE = 'd2;
 
 reg cur_state, nxt_state;
@@ -60,22 +59,63 @@ end
 always @(*) begin
     nxt_state = cur_state;
     case(cur_state) 
-        IDLE: if (in_valid) nxt_state = FFT;
-        FFT: if (out_cnt_fft == 255) nxt_state = DIVIDE;
-        DIVIDE: if (out_cnt == 0 && cnt == 511) nxt_state = IDLE;
+        IDLE: if (in_valid) nxt_state = CAL;
+        CAL: if (out_cnt_fft == 255) nxt_state = IDLE;
     endcase
 end
+*/
+assign in_valid_fft = in_valid;
+assign clk_fft = clk;
+assign rst_n_fft = rst_n;
 
+// ========================================
+// 1. Conjugate
+// ========================================
+assign in_xp_real = x_real;
+assign in_xp_img = -x_img;
+
+// ========================================
+// 3. Conjugate 
+// ========================================
+always @(posedge clk) begin
+    if (out_valid_fft) begin
+        out_reg_real_fft <= (out_yp_real);
+        out_reg_img_fft <= (-out_yp_img);
+    end
+end
+reg out_valid_delay;
+always @(posedge clk) begin
+    out_valid_delay <= out_valid_fft;
+end
+// ========================================
+// Output
+// ========================================
 always @(posedge clk) begin
     if (!rst_n) begin
-        out_cnt_fft <= 0;
+        out_valid <= 0;
     end
     else begin
-        if (out_valid_fft) begin
-            out_cnt_fft <= out_cnt_fft + 1;
+        if (out_valid_delay) begin
+            out_valid <= 1;
         end
-        else if (cur_state == IDLE) begin
-            out_cnt_fft <= 0;
+        else begin
+            out_valid <= 0;
+        end
+    end
+end
+always @(posedge clk) begin
+    if (!rst_n) begin
+        yp_real <= 0;
+        yp_img <= 0;
+    end
+    else begin
+        if (out_valid_delay) begin
+            yp_real <= out_reg_real_fft >> 8;
+            yp_img <= out_reg_img_fft >> 8;            
+        end
+        else begin
+            yp_real <= 0;
+            yp_img <= 0;            
         end
     end
 end
@@ -90,9 +130,4 @@ FFT_256 fft_256(
     .y_img(out_yp_img),
     .out_valid(out_valid_fft)
 );
-always @(posedge clk) begin
-    if (out_valid_fft) begin
-        
-    end
-end
 endmodule
