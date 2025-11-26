@@ -45,6 +45,7 @@ reg signed [15:0] STG_I [0:8][0:255];
 reg[9:0] out_counter;
 reg signed [15:0] xp_real_reg[0:255], xp_img_reg[0:255];
 reg signed [15:0] golden_out_yp_img[0:255], golden_out_yp_real[0:255];
+reg signed [15:0] temp_golden_out_yp_img[0:255], temp_golden_out_yp_real[0:255];
 
 reg signed [15:0] in_real, in_img;
 
@@ -431,8 +432,8 @@ endfunction
 task cal_gold_task; begin
     fft_task;
     for (i = 0 ; i < 256; i = i + 1) begin
-            golden_out_yp_real[n] = (temp_golden_out_yp_real[n])/256;
-            golden_out_yp_img[n]  = (-temp_golden_out_yp_img[n])/256; 
+            golden_out_yp_real[i] = (temp_golden_out_yp_real[i])/256;
+            golden_out_yp_img[i]  = (-temp_golden_out_yp_img[i])/256; 
     end
 end
 endtask
