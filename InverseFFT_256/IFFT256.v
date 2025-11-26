@@ -40,8 +40,8 @@ wire signed [15:0] in_xp_real, in_xp_img;
 wire signed [15:0] out_yp_real, out_yp_img;
 wire out_valid_fft;
 
-reg [15:0] out_reg_real_fft;
-reg [15:0] out_reg_img_fft;
+reg signed [15:0] out_reg_real_fft;
+reg signed [15:0] out_reg_img_fft;
 //reg [7:0] out_cnt_fft;
 /*
 localparam
@@ -105,17 +105,17 @@ always @(posedge clk) begin
 end
 always @(posedge clk) begin
     if (!rst_n) begin
-        yp_real <= 0;
-        yp_img <= 0;
+        y_real <= 0;
+        y_img <= 0;
     end
     else begin
         if (out_valid_delay) begin
-            yp_real <= out_reg_real_fft >> 8;
-            yp_img <= out_reg_img_fft >> 8;            
+            y_real <= out_reg_real_fft >>> 8;
+            y_img <= out_reg_img_fft >>> 8;            
         end
         else begin
-            yp_real <= 0;
-            yp_img <= 0;            
+            y_real <= 0;
+            y_img <= 0;            
         end
     end
 end
