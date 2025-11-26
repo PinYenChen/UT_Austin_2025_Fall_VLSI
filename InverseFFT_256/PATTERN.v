@@ -353,7 +353,7 @@ initial begin
         in_xp_img = 'bx;
         latency = 0;
 
-        conjugate_task;
+
         cal_gold_task;
         wait_out_valid_task;
         check_ans_task;
@@ -432,8 +432,8 @@ endfunction
 task cal_gold_task; begin
     fft_task;
     for (i = 0 ; i < 256; i = i + 1) begin
-            golden_out_yp_real[i] = (temp_golden_out_yp_real[i])/256;
-            golden_out_yp_img[i]  = (-temp_golden_out_yp_img[i])/256; 
+            golden_out_yp_real[i] = (temp_golden_out_yp_real[i]) >>> 8;
+            golden_out_yp_img[i]  = (-temp_golden_out_yp_img[i]) >>> 8; 
     end
 end
 endtask
@@ -666,7 +666,7 @@ task display_pass; begin
 	$display("              clock period = %4fns", CYCLE);
 	$display("**************************************************");
 end endtask
-IFFT256 ifft_256(
+IFFT_256 ifft_256(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
