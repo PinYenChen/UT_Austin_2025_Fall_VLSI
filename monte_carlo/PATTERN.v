@@ -59,6 +59,7 @@ integer i, f_in, m;
 integer a;
 
 reg signed [15:0] delta_real_reg [0:255], delta_img_reg [0:255];
+reg signed [15:0] delta_real, delta_img;
 
 reg signed [15:0] STG_R [0:8][0:255];  // 9 個 stage (0~8)，每個 256 點
 reg signed [15:0] STG_I [0:8][0:255];
@@ -388,7 +389,7 @@ initial begin
         @(negedge clk);
         in_valid = 0;
         in_xp_real = 'bx;
-        in_xp_img = 'bx;
+        //in_xp_img = 'bx;
         in_delta_real = 'bx;
         in_delta_img = 'bx;
         latency = 0;
@@ -481,8 +482,8 @@ task cal_gold_task; begin
         multiply_task(
         .multa_real(golden_fft_out_yp_real[i]), 
         .multa_img(golden_fft_out_yp_img[i]),
-        .multb_real(delta_real[i]), 
-        .multb_img(delta_img[i]),
+        .multb_real(delta_real_reg[i]), 
+        .multb_img(delta_img_reg[i]),
         .mulres_real_15(mul_real_reg[i]),
         .mulres_img_15(mul_img_reg[i]));  
     end
@@ -504,7 +505,7 @@ task automatic multiply_task(
     input signed [15:0] multb_real, 
     input signed [15:0] multb_img,  // Delta_fft
     output signed [15:0] mulres_real_15, 
-    output signed [15:0] mulres_img_15;
+    output signed [15:0] mulres_img_15
 ); begin
 
     integer real_real, img_img, real_img, img_real;
@@ -751,7 +752,9 @@ task reset_task;begin
     rst_n = 1'b1;
     in_valid = 1'b0;
 	in_xp_real = 16'bx;
-    in_xp_img = 16'bx;
+    in_delta_img = 16'bx;
+    in_delta_real = 16'bx;
+    //in_xp_img = 16'bx;
     total_latency = 0;
 
     // Apply reset
