@@ -741,7 +741,7 @@ FFT_256 fft_256(
     .rst_n(rst_n),
     .in_valid(in_valid),
     .x_real(in_xp_real),
-    .x_img(in_xp_img),
+    //.x_img(in_xp_img),
     .y_real(out_yp_real),
     .y_img(out_yp_img),
     .out_valid(out_valid)
