@@ -30,6 +30,7 @@ module MC(
 );
 input clk, rst_n, in_valid;
 input signed [15:0] x_real; // x_img;
+input signed [15:0] delta_real, delta_img;
 output reg signed [15:0] y_real, y_img;
 output reg out_valid;
 
@@ -38,17 +39,18 @@ integer i;
 reg [15:0] delta_real_reg[0:255];
 reg [15:0] delta_img_reg[0:255];
 reg [7:0] in_cnt;
+reg out_valid_fft_delay;
 
 wire clk_fft, rst_n_fft, in_valid_fft, out_valid_fft;
 wire signed [15:0] in_xp_real, out_yp_real, out_yp_img;
 
-wire in_valid_ifft, out_valid_ifft;
-wire signed [15:0] in_xp_real_ifft, in_xp_img_ifft, out_yp_real_ifft, out_yp_img_ifft;
+reg in_valid_ifft, out_valid_ifft;
+reg signed [15:0] in_xp_real_ifft, in_xp_img_ifft, out_yp_real_ifft, out_yp_img_ifft;
 
 reg [15:0] multa_real, multb_real;
 reg [15:0] multa_img, multb_img;
 reg [7:0] mult_cnt;
-wire [15:0] mulres_real, mulres,img;
+wire [15:0] mulres_real, mulres_img;
 
 always @(posedge clk) begin
     if (!rst_n) begin
@@ -106,13 +108,17 @@ always @(posedge clk) begin
     end
     else begin
         multa_real <= 0;
-        multa_img <= 0        
+        multa_img <= 0;        
     end
 end
 always @(posedge clk) begin
     if (out_valid_fft) begin
         multb_real <= delta_real_reg[mult_cnt];
-        mult_b_img <= delta_img_reg[mult_cnt];
+        multb_img <= delta_img_reg[mult_cnt];
+    end
+    else begin
+        multb_real <= 0;
+        multb_img <= 0;        
     end
 end
 always @(posedge clk) begin
@@ -177,7 +183,7 @@ module MULT (
     multb_real, 
     multb_img,  // Delta_fft
     mulres_real_15, 
-    mulres_img_15;
+    mulres_img_15
 );
 
 input signed [15:0] multa_real, multa_img;  // P_fft
