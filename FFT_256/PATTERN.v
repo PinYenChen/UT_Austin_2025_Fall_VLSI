@@ -354,7 +354,7 @@ initial begin
             in_xp_img = xp_img_reg[i];
             @(negedge clk);
         end
-        @(negedge clk);
+        
         in_valid = 0;
         in_xp_real = 'bx;
         in_xp_img = 'bx;
