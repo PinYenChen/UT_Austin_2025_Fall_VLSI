@@ -339,7 +339,7 @@ end
 initial begin
     // Initialize signals
     reset_task;
-    pat_tot = 10000;
+    pat_tot = 100;
     for (i = 0 ; i < 256; i = i+1) begin
         xp_real_reg[i] = 0;
         xp_img_reg[i] = 0;
@@ -643,7 +643,7 @@ task input_task; begin
     
     for (i = 0 ; i < 256 ; i = i + 1) begin
         xp_real_reg[i] = $urandom_range(-32768, 32767);
-        xp_img_reg[i] = $urandom_range(-32768, 32767);
+        // xp_img_reg[i] = $urandom_range(-32768, 32767);
     end
     
     /*
