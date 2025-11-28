@@ -386,7 +386,7 @@ initial begin
 
             @(negedge clk);
         end
-        @(negedge clk);
+
         in_valid = 0;
         in_xp_real = 'bx;
         //in_xp_img = 'bx;
@@ -865,11 +865,13 @@ task display_fail; begin
     $display("\033[31m \033[5m  //           //   | |     //   | |     //   / /     //   | |\033[0m");
     $display("\033[31m \033[5m //____/ /    //    | |    //    | |    ((___/ /     //    | |\033[0m");
 end endtask
-MC monte_carlo(
+MC mc(
     .clk(clk),
     .rst_n(rst_n),
     .in_valid(in_valid),
     .x_real(in_xp_real),
+    .delta_img(in_delta_img),
+    .delta_real(in_delta_real),
     .y_real(out_yp_real),
     .y_img(out_yp_img),
     .out_valid(out_valid)
