@@ -574,7 +574,7 @@ task input_task; begin
     
     for (i = 0 ; i < 256 ; i = i + 1) begin
         xp_real_reg[i] = $urandom_range(-32768, 32767);
-        //xp_img_reg[i] = $urandom_range(-32768, 32767);
+        xp_img_reg[i] = $urandom_range(-32768, 32767);
     end
     
     /*
