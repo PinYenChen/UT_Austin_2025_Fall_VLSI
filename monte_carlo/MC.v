@@ -16,8 +16,6 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //############################################################################
 
-
-
 module MC(
     clk,
     rst_n,
@@ -35,27 +33,22 @@ input signed [15:0] x_real; // x_img;
 output reg signed [15:0] y_real, y_img;
 output reg out_valid;
 
-
 integer i;
 
 reg [15:0] delta_real_reg[0:255];
 reg [15:0] delta_img_reg[0:255];
 reg [7:0] in_cnt;
+
+wire clk_fft, rst_n_fft, in_valid_fft, out_valid_fft;
+wire signed [15:0] in_xp_real, out_yp_real, out_yp_img;
+
+wire in_valid_ifft, out_valid_ifft;
+wire signed [15:0] in_xp_real_ifft, in_xp_img_ifft, out_yp_real_ifft, out_yp_img_ifft;
+
 reg [15:0] multa_real, multb_real;
 reg [15:0] multa_img, multb_img;
 reg [7:0] mult_cnt;
 wire [15:0] mulres_real, mulres,img;
-
-always @(posedge clk) begin
-    if (!rst_n) begin
-        mult_cnt <= 0;
-    end
-    else begin
-        if (out_valid_fft) begin
-            mult_cnt <= mult_cnt + 1;
-        end
-    end
-end
 
 always @(posedge clk) begin
     if (!rst_n) begin
@@ -83,7 +76,7 @@ always @(posedge clk) begin
     end
 end
 
-wire clk_fft, rst_n_fft, in_valid_fft;
+
 assign clk_fft = clk;
 assign rst_n_fft = rst_n;
 assign in_valid_fft = in_valid;
@@ -97,6 +90,7 @@ FFT_256 fft_256(
     .rst_n(rst_n_fft),
     .in_valid(in_valid_fft),
     .x_real(in_xp_real),
+
     .y_real(out_yp_real),
     .y_img(out_yp_img),
     .out_valid(out_valid_fft)
@@ -110,11 +104,25 @@ always @(posedge clk) begin
         multa_real <= out_yp_real;
         multa_img <= out_yp_img;
     end
+    else begin
+        multa_real <= 0;
+        multa_img <= 0        
+    end
 end
 always @(posedge clk) begin
     if (out_valid_fft) begin
         multb_real <= delta_real_reg[mult_cnt];
         mult_b_img <= delta_img_reg[mult_cnt];
+    end
+end
+always @(posedge clk) begin
+    if (!rst_n) begin
+        mult_cnt <= 0;
+    end
+    else begin
+        if (out_valid_fft) begin
+            mult_cnt <= mult_cnt + 1;
+        end
     end
 end
 MULT mul (    
@@ -129,7 +137,36 @@ MULT mul (
 // 3) IFFT
 // ================================================
 
+always @(posedge clk) begin
+    out_valid_fft_delay <= out_valid_fft;
+end
+always @(posedge clk) begin
+    in_valid_ifft <= out_valid_fft_delay;
+end
+always @(posedge clk) begin
+    if (out_valid_fft_delay) begin
+        in_xp_real_ifft <= mulres_real;
+        in_xp_img_ifft <= mulres_img;
+    end
+    else begin
+        in_xp_real_ifft <= 0;
+        in_xp_img_ifft <= 0;        
+    end
+end
+IFFT_256 ifft_256(
+    .clk(clk_fft),
+    .rst_n(rst_n_fft),
+    .in_valid(in_valid_ifft),
+    .x_real(in_xp_real_ifft),
+    .x_img(in_xp_img_ifft),
+    .y_real(out_yp_real_ifft),
+    .y_img(out_yp_img_ifft),
+    .out_valid(out_valid_ifft)
+);
 
+assign out_valid = out_valid_ifft;
+assign y_real = out_yp_real_ifft;
+assign y_img = out_yp_img_ifft;
 
 
 endmodule
