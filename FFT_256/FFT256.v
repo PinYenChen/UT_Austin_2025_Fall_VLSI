@@ -16,7 +16,6 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //############################################################################
 
-
 module FFT_256(
     clk,
     rst_n,
@@ -231,7 +230,7 @@ wire signed [15:0] w_img[0:127];
 reg [7:0] in_cnt;
 reg [8:0] cnt;
 reg signed [15:0] in_reg_real [0:128]; 
-reg signed [15:0] in_reg_img [0:128];
+//reg signed [15:0] in_reg_img [0:128];
 
 reg [7:0] out_cnt;
 integer i,j;
@@ -286,15 +285,15 @@ always @(posedge clk) begin
     if (!rst_n) begin
         for (i = 0 ; i < 129 ; i = i + 1) begin
             in_reg_real[i] <= 0;
-            in_reg_img[i] <= 0;
+            //in_reg_img[i] <= 0;
         end
     end
     else if (in_valid) begin
         in_reg_real [128] <= x_real;
-        in_reg_img [128] <= x_img;
+        //in_reg_img [128] <= x_img;
         for (i = 0 ; i < 128 ; i = i + 1) begin
             in_reg_real[i] <= in_reg_real[i+1];
-            in_reg_img[i] <= in_reg_img[i+1];
+            //in_reg_img[i] <= in_reg_img[i+1];
         end 
     end
 end
@@ -304,9 +303,9 @@ end
 always @(*) begin
     if (cnt > 128 && cnt < 257) begin
         b1_xp_real = in_reg_real[0];
-        b1_xp_img = in_reg_img[0];
+        b1_xp_img = 0;
         b1_xq_real = in_reg_real[128];
-        b1_xq_img = in_reg_img[128];
+        b1_xq_img = 0;
         b1_wreal = w_real[0];
         b1_wimg = w_img[0];
     end
