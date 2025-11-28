@@ -31,8 +31,8 @@ module MC(
 input clk, rst_n, in_valid;
 input signed [15:0] x_real; // x_img;
 input signed [15:0] delta_real, delta_img;
-output reg signed [15:0] y_real, y_img;
-output reg out_valid;
+output wire signed [15:0] y_real, y_img;
+output wire out_valid;
 
 integer i;
 
