@@ -25,5 +25,7 @@
 //two_bit_counter.v
 //two_bit_test.v
 FFT256.v
+FFT256_ifft.v
 IFFT256.v
+MC.v
 PATTERN.v
