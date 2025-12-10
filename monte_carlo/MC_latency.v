@@ -42,7 +42,7 @@ reg [7:0] in_cnt;
 reg out_valid_fft_delay;
 
 wire clk_fft, rst_n_fft, in_valid_fft, out_valid_fft;
-wire signed [15:0] in_xp_real, out_yp_real, out_yp_img;
+wire signed [15:0] in_xp_real, in_xp_img, out_yp_real, out_yp_img;
 
 reg in_valid_ifft, out_valid_ifft;
 reg signed [15:0] in_xp_real_ifft, in_xp_img_ifft, out_yp_real_ifft, out_yp_img_ifft;
@@ -53,17 +53,19 @@ reg [7:0] mult_cnt;
 wire [15:0] mulres_real, mulres_img;
 
 reg [10:0] cnt;
+
 always @(posedge clk) begin
     if (!rst_n) begin
         cnt <= 0;
     end
     else begin
-        if (in_valid || cnt != 0) begin
-            cnt <= cnt + 1;
-        end
-        else if (out_valid) begin
+        if (cnt == 1061) begin
             cnt <= 0;
         end
+        else if (in_valid || cnt != 0) begin
+            cnt <= cnt + 1;
+        end
+
     end
 end
 
@@ -90,6 +92,7 @@ always @(posedge clk) begin
         if (in_valid) begin
             in_cnt <= in_cnt + 1;
         end
+        else in_cnt <= 0;
     end
 end
 
@@ -138,7 +141,7 @@ always @(posedge clk) begin
     end   
 end
 always @(posedge clk) begin
-    if (cnt > 534) begin
+    if (cnt > 533 && cnt < 791) begin
         multa_real <= buffer_real[mult_cnt];
         multa_img <= buffer_img[mult_cnt];
     end
@@ -148,7 +151,7 @@ always @(posedge clk) begin
     end
 end
 always @(posedge clk) begin
-    if (cnt > 534) begin
+    if (cnt > 533 && cnt < 791) begin
         multb_real <= delta_real_reg[mult_cnt];
         multb_img <= delta_img_reg[mult_cnt];
     end
@@ -162,8 +165,11 @@ always @(posedge clk) begin
         mult_cnt <= 0;
     end
     else begin
-        if (cnt > 534) begin
+        if (cnt > 533 && cnt != 1061) begin
             mult_cnt <= mult_cnt + 1;
+        end
+        else if (cnt == 1061) begin
+            mult_cnt <= 0;
         end
     end
 end
@@ -180,11 +186,11 @@ MULT mul (
 // ================================================
 
 always @(*) begin
-    if (cnt > 535 && cnt < 792) in_valid_ifft = 1;
+    if (cnt > 535 && cnt < 793) in_valid_ifft = 1;
     else in_valid_ifft = 0;
 end
 always @(posedge clk) begin
-    if (cnt > 534 && cnt < 791) begin
+    if (cnt > 534 && cnt < 792) begin
         in_xp_real_ifft <= mulres_real;
         in_xp_img_ifft <= mulres_img;
     end
